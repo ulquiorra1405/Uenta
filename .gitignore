@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+*.user
+
+# Rider / VS
+.idea/
+.vs/
+*.suo
+
+# SQLite databases (los datos del negocio NO van al repo)
+*.db
+*.db-shm
+*.db-wal
+
+# OS
+Thumbs.db
+.DS_Store
