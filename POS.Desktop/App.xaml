@@ -1,9 +1,24 @@
-﻿<Application x:Class="POS.Desktop.App"
+<Application x:Class="POS.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:POS.Desktop"
-             StartupUri="MainWindow.xaml">
+             xmlns:vm="clr-namespace:POS.Desktop.ViewModels"
+             xmlns:views="clr-namespace:POS.Desktop.Views"
+             xmlns:conv="clr-namespace:POS.Desktop.Converters">
     <Application.Resources>
-         
+        <!-- Null/vacío → visible (mensaje de error) -->
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+
+        <!-- Mapeo ViewModel → Vista (navegación por DataTemplate) -->
+        <DataTemplate DataType="{x:Type vm:ProductListViewModel}">
+            <views:ProductListView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ProductEditViewModel}">
+            <views:ProductEditView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding Message}" FontSize="16" Foreground="Gray" TextWrapping="Wrap" />
+            </StackPanel>
+        </DataTemplate>
     </Application.Resources>
 </Application>

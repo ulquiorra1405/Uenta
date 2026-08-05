@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddDbContext<PosDbContext>(o => o.UseSqlite(connectionString));
 
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
         services.AddScoped<IClock, SystemClock>();
         services.AddScoped<IReceiptPrinter, ConsoleReceiptPrinter>();
