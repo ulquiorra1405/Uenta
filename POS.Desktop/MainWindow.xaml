@@ -29,6 +29,6 @@
         </Border>
 
         <!-- Contenido (el DataTemplate elige la vista según el ViewModel actual) -->
-        <ContentControl Grid.Column="1" Content="{Binding Navigation.Current}" />
+        <ContentControl Grid.Column="1" Content="{Binding Current}" />
     </Grid>
 </Window>

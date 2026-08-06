@@ -64,6 +64,10 @@ public partial class App : System.Windows.Application
             return;
         }
 
+        // Vista inicial: catálogo de productos.
+        var navigation = _services.GetRequiredService<INavigationService>();
+        navigation.NavigateTo<ProductListViewModel>();
+
         var mainWindow = _services.GetRequiredService<MainWindow>();
         mainWindow.Show();
     }
