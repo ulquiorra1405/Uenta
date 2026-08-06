@@ -20,6 +20,10 @@ public static class DbSeeder
                 new Category { Name = "Bebidas" },
                 new Category { Name = "Panadería" },
                 new Category { Name = "Snacks" });
+
+            // Persistir ANTES de usarlas en el bloque de productos
+            // (sin SaveChanges, FirstAsync no las encuentra → error en base limpia).
+            await db.SaveChangesAsync();
         }
 
         if (!await db.Products.AnyAsync())
