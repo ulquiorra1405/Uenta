@@ -4,9 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Uenta — Punto de Venta" Height="640" Width="1100"
-        WindowStartupLocation="CenterScreen">
+        Title="Uenta — Punto de Venta" Height="800" Width="1280"
+        WindowStartupLocation="CenterScreen" WindowState="Maximized"
+        MinHeight="700" MinWidth="1100">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="210" />
             <ColumnDefinition Width="*" />
@@ -29,6 +33,7 @@
         </Border>
 
         <!-- Contenido (el DataTemplate elige la vista según el ViewModel actual) -->
-        <ContentControl Grid.Column="1" Content="{Binding Current}" />
+        <ContentControl Grid.Column="1" Content="{Binding Current}"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
     </Grid>
 </Window>

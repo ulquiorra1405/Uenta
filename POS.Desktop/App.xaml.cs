@@ -38,6 +38,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<MainWindow>();
         services.AddTransient<ProductListViewModel>();
         services.AddTransient<ProductEditViewModel>();
+        services.AddTransient<SaleViewModel>();
         services.AddTransient<PlaceholderViewModel>();
 
         _services = services.BuildServiceProvider();
@@ -64,9 +65,9 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        // Vista inicial: catálogo de productos.
+        // Vista inicial: pantalla de venta.
         var navigation = _services.GetRequiredService<INavigationService>();
-        navigation.NavigateTo<ProductListViewModel>();
+        navigation.NavigateTo<SaleViewModel>();
 
         var mainWindow = _services.GetRequiredService<MainWindow>();
         mainWindow.Show();

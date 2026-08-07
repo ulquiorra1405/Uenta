@@ -11,7 +11,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Navigation = navigation;
         GoCatalogCommand = new RelayCommand(() => Navigation.NavigateTo<ProductListViewModel>());
-        GoSalesCommand = new RelayCommand(() => Navigation.NavigateTo<PlaceholderViewModel>(vm => vm.Message = "El módulo de Ventas llega en el próximo incremento."));
+        GoSalesCommand = new RelayCommand(() => Navigation.NavigateTo<SaleViewModel>());
 
         // Re-notifica cuando la navegación cambia para que el ContentControl se actualice.
         Navigation.CurrentChanged += _ => OnPropertyChanged(nameof(Current));

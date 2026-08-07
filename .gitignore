@@ -16,3 +16,6 @@ obj/
 # OS
 Thumbs.db
 .DS_Store
+
+# UI/UX Pro Max skill (local, fuera del repo)
+.agents/

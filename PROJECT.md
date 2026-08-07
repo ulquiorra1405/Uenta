@@ -48,7 +48,7 @@ Sistema de punto de venta (POS) para **un negocio**, de mostrador, que corre en 
 - Código de barras / SKU (único)
 - Precio de venta (con ITBIS incluido) y costo
 - Stock mínimo (alerta)
-- Variantes simples: talla / color (v1: por producto, sin combinaciones complejas)
+- Variantes simples: producto maestro (línea) + variantes hijas con SKU/precio/stock propios (v1); creación por "duplicar y editar". Atributos (ej. color) como etiquetas, no multiplican inventario (regla P9)
 
 **Inventario**
 - Stock en tiempo real por producto
@@ -176,7 +176,7 @@ Desktop NUNCA referencia Domain ni Infrastructure directamente
 
 ```
 Product ──┬── Category
-          ├── Variant (talla/color; opcional v1)
+          ├── Variant (producto hijo con SKU/precio/stock; opcional v1 — regla P9: solo si cambia precio o stock)
           └── StockMovement (entrada/salida/ajuste, motivo, usuario, fecha)
 
 Customer (nombre, teléfono, RNC/cedula?, correo?)
@@ -219,7 +219,7 @@ Setting (clave/valor: nombre negocio, RNC, dirección, pie de recibo, etc.)
 
 ---
 
-## 8. Decisiones tomadas (05-ago-2026)
+## 8. Decisiones tomadas (05-ago-2026, actualizado 06-ago-2026)
 
 | # | Pregunta | Decisión |
 |---|----------|----------|
@@ -227,10 +227,11 @@ Setting (clave/valor: nombre negocio, RNC, dirección, pie de recibo, etc.)
 | P2 | ¿Precios con ITBIS incluido? | **Sí** — retail RD; el recibo muestra el desglose |
 | P3 | ¿Vender sin stock (negativo)? | **Sí, inicialmente** — se permite, el carrito avisa pero no bloquea; manejo de stock/almacenes se define después |
 | P4 | ¿Crédito a clientes (fiado)? | **No** — v1 solo contado (efectivo/tarjeta/transferencia) |
-| P5 | ¿Variantes (talla/color)? | **Sí** — simple: variante = producto hijo con su propio stock |
+| P5 | ¿Variantes (talla/color)? | **Sí** — simple: variante = producto hijo con su propio stock; creación por "duplicar y editar"; ver regla completa en P9 |
 | P6 | ¿Repositorio git en GitHub? | **Sí** — privado (respaldo + historial); se crea al iniciar git local |
 | P7 | IDE de desarrollo | **Visual Studio 2022 Community** (recomendación de Theo, ver §8.1) |
 | P8 | ¿Descuentos con tope por rol? | **Sí** — configurable por rol |
+| P9 | ¿Cómo abarcar dimensiones de producto (specs, estado, color)? | **Regla: una dimensión es variante SOLO si cambia precio o necesita stock propio.** En la práctica: specs (i5/i7, RAM…) y estado (nuevo/usado/reparado) = variantes; color = atributo (etiqueta en la ficha), no multiplica inventario. Sin motor de combinaciones en v1 (genera SKUs fantasma y complica al cajero); el SKU codifica la configuración (ej. `IP3-NEG-16-512-NUE`) para que el cajero escanee y venda. Matriz de dimensiones configurables → Fase 2+, solo si un cliente real lo pide |
 
 ### 8.1 Por qué Visual Studio 2022 para este proyecto
 
