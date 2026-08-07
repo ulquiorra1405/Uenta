@@ -7,29 +7,143 @@
         Title="Uenta — Punto de Venta" Height="800" Width="1280"
         WindowStartupLocation="CenterScreen" WindowState="Maximized"
         MinHeight="700" MinWidth="1100">
+
+    <Window.Resources>
+        <!-- Botón de navegación del sidebar (claro, hover suave, colapsa centrando icono) -->
+        <Style x:Key="SidebarNavButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource MutedBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <!-- Colapsado: solo icono centrado -->
+                <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                    <Setter Property="Padding" Value="0,10" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
+            <!-- Fila única que llena la ventana (sin esto, Auto se estira al contenido y el sidebar se sale por abajo) -->
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="210" />
+            <!-- Auto: el Border del sidebar define el ancho (210 expandido / 64 solo iconos) -->
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <!-- Sidebar -->
-        <Border Grid.Column="0" Background="#1F2937">
-            <StackPanel Margin="0,24,0,0">
-                <TextBlock Text="UENTA" Foreground="White" FontSize="26" FontWeight="Bold"
-                           Margin="20,0,0,32" />
-                <Button Content="📦  Catálogo" Command="{Binding GoCatalogCommand}"
-                        Background="Transparent" BorderThickness="0" Foreground="White"
-                        HorizontalContentAlignment="Left" Padding="20,12" FontSize="14"
-                        Cursor="Hand" />
-                <Button Content="🛒  Ventas" Command="{Binding GoSalesCommand}"
-                        Background="Transparent" BorderThickness="0" Foreground="#9CA3AF"
-                        HorizontalContentAlignment="Left" Padding="20,12" FontSize="14"
-                        Cursor="Hand" />
-            </StackPanel>
+        <!-- Sidebar (claro, igual paleta que el resto) -->
+        <Border Grid.Column="0" Width="{Binding SidebarWidth}"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Logo -->
+                <TextBlock Text="UENTA" FontSize="26" FontWeight="Bold"
+                           Foreground="{StaticResource PrimaryBrush}" Margin="20,24,0,24"
+                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+
+                <!-- Navegación -->
+                <StackPanel Grid.Row="1" Margin="8,0">
+                    <Button Command="{Binding GoCatalogCommand}" ToolTip="Catálogo">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCatalogActive}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A9;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Catálogo" Margin="12,0,0,0" VerticalAlignment="Center"
+                                       Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding GoSalesCommand}" ToolTip="Ventas">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSalesActive}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7BF;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="Ventas" Margin="12,0,0,0" VerticalAlignment="Center"
+                                       Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Colapsar / expandir -->
+                <Button Grid.Row="2" Command="{Binding ToggleSidebarCommand}" Margin="8,0,8,12">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                    <Setter Property="ToolTip" Value="Expandir panel" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                    <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14"
+                               Foreground="{StaticResource TextSecondaryBrush}">
+                        <!-- El Text por defecto vive en el Style (no como valor local), para que el DataTrigger pueda cambiarlo -->
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="&#xE76B;" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                        <Setter Property="Text" Value="&#xE76C;" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+            </Grid>
         </Border>
 
         <!-- Contenido (el DataTemplate elige la vista según el ViewModel actual) -->
