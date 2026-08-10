@@ -14,7 +14,14 @@ public partial class MainWindowViewModel : ViewModelBase
         GoSalesCommand = new RelayCommand(() => Navigation.NavigateTo<SaleViewModel>());
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
 
-        Navigation.CurrentChanged += _ => OnPropertyChanged(nameof(Current));
+        Navigation.CurrentChanged += _ =>
+        {
+            // Importante: notificar TODOS los flags, no solo Current. Si no,
+            // el sidebar nunca se entera de que cambió la pantalla activa.
+            OnPropertyChanged(nameof(Current));
+            OnPropertyChanged(nameof(IsCatalogActive));
+            OnPropertyChanged(nameof(IsSalesActive));
+        };
     }
 
     /// <summary>Vista actual; el ContentControl del MainWindow bindea aquí.</summary>
@@ -32,7 +39,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public double SidebarWidth => IsSidebarCollapsed ? 64 : 210;
 
     /// <summary>Item de navegación activo según la vista actual.</summary>
-    public bool IsCatalogActive => Current is ProductListViewModel;
+    /// <remarks>Editar producto pertenece a Catálogo (se mantiene el item activo).</remarks>
+    public bool IsCatalogActive => Current is ProductListViewModel or ProductEditViewModel;
     public bool IsSalesActive => Current is SaleViewModel;
 
     partial void OnIsSidebarCollapsedChanged(bool value)

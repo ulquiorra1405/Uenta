@@ -3,13 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:POS.Desktop"
         mc:Ignorable="d"
         Title="Uenta — Punto de Venta" Height="800" Width="1280"
         WindowStartupLocation="CenterScreen" WindowState="Maximized"
         MinHeight="700" MinWidth="1100">
 
     <Window.Resources>
-        <!-- Botón de navegación del sidebar (claro, hover suave, colapsa centrando icono) -->
+        <!-- Botón de navegación del sidebar (estilo Swiss):
+             activo = fondo suave + texto/icono verde + barra izquierda 3px PrimaryBrush.
+             Hover = fondo MutedBrush · Press = PrimaryLightBrush · Foco = ring. -->
         <Style x:Key="SidebarNavButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
@@ -21,19 +24,36 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Chrome"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="Center" />
-                        </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="3" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- Indicador de sección activa (barra izquierda, estilo Swiss) -->
+                            <Border x:Name="Indicator" Grid.Column="0" Width="3"
+                                    Background="Transparent" CornerRadius="0,2,2,0" Margin="0,5,0,5" />
+                            <Border x:Name="Chrome" Grid.Column="1"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
                         <ControlTemplate.Triggers>
+                            <!-- Activo (lo marca el Style de cada botón vía SidebarNav.IsActive) -->
+                            <DataTrigger Binding="{Binding (local:SidebarNav.IsActive), RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                <Setter TargetName="Indicator" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                            </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Chrome" Property="Background" Value="{StaticResource MutedBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderThickness" Value="1" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -78,12 +98,14 @@
 
                 <!-- Navegación -->
                 <StackPanel Grid.Row="1" Margin="8,0">
-                    <Button Command="{Binding GoCatalogCommand}" ToolTip="Catálogo">
+                    <Button Command="{Binding GoCatalogCommand}" ToolTip="Catálogo"
+                            AutomationProperties.Name="Catálogo">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsCatalogActive}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                        <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        <Setter Property="Background" Value="{StaticResource MutedBrush}" />
                                         <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -97,12 +119,14 @@
                         </StackPanel>
                     </Button>
 
-                    <Button Command="{Binding GoSalesCommand}" ToolTip="Ventas">
+                    <Button Command="{Binding GoSalesCommand}" ToolTip="Ventas"
+                            AutomationProperties.Name="Ventas">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSalesActive}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                        <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        <Setter Property="Background" Value="{StaticResource MutedBrush}" />
                                         <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
@@ -118,7 +142,8 @@
                 </StackPanel>
 
                 <!-- Colapsar / expandir -->
-                <Button Grid.Row="2" Command="{Binding ToggleSidebarCommand}" Margin="8,0,8,12">
+                <Button Grid.Row="2" Command="{Binding ToggleSidebarCommand}" Margin="8,0,8,12"
+                        AutomationProperties.Name="Colapsar panel">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
                             <Style.Triggers>

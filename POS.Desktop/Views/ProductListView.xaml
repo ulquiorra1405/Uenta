@@ -31,7 +31,7 @@
                      Padding="8,6" VerticalContentAlignment="Center"
                      ToolTip="Buscar por nombre, SKU o código de barras" />
             <Button Grid.Column="1" Content="Buscar" Command="{Binding SearchCommand}"
-                    Margin="8,0,0,0" Padding="16,6" />
+                    Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="16,6" />
             <Button Grid.Column="2" Content="+ Nuevo producto" Command="{Binding NewCommand}"
                     Margin="8,0,0,0" Padding="16,6" FontWeight="SemiBold" />
         </Grid>
@@ -62,11 +62,13 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <Button Content="Editar" Command="{Binding EditCommand}" Padding="16,6" />
-                <Button Content="Desactivar" Command="{Binding DeactivateCommand}" Padding="16,6" Margin="8,0,0,0" />
+                <Button Content="Editar" Command="{Binding EditCommand}" Padding="16,6"
+                        Style="{StaticResource SecondaryButton}" />
+                <Button Content="Desactivar" Command="{Binding DeactivateCommand}" Padding="16,6" Margin="8,0,0,0"
+                        Style="{StaticResource SecondaryButton}" Foreground="{StaticResource DangerBrush}" />
             </StackPanel>
             <TextBlock Grid.Column="2" Text="{Binding StatusMessage}" VerticalAlignment="Center"
-                       Foreground="Gray" />
+                       Foreground="{StaticResource TextSecondaryBrush}" />
         </Grid>
     </Grid>
 </UserControl>

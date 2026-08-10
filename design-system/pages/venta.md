@@ -14,8 +14,10 @@ son el objetivo: cada venta debe tomar segundos, no minutos.
 
 **No aplican del MASTER:** el patrón de landing page, el motion GSAP (scroll
 reveal) y los breakpoints responsive web. Esta es una app desktop de alta
-densidad con ventana única maximizada. Se conservan: colores, tipografía,
-densidad 8/10, estilo Soft UI Evolution, sombras y checklist de calidad.
+densidad con ventana única maximizada. Se conservan: layout, flujos, atajos.
+**Línea estética (10-ago-2026):** Minimalismo Funcional (Swiss) — ver
+`estetica-minimalista.md` y `uenta-pos/MASTER.md`. Cambió la paleta de neutros,
+se eliminaron las sombras decorativas y el sidebar ahora usa barra indicadora.
 
 ---
 
@@ -78,19 +80,18 @@ verticales: header (48px), cuerpo (flex), sin footer global.
 
 | Token | Hex | Uso WPF |
 |-------|-----|---------|
-| `PrimaryBrush` | `#059669` | Elementos activos, foco, enlaces, selección |
-| `PrimaryDarkBrush` | `#047857` | Hover de primario |
-| `AccentBrush` | `#EA580C` | **COBRAR**, acciones de conversión (naranja macro) |
+| `PrimaryBrush` | `#059669` | Elementos activos, foco, selección (configurable) |
+| `PrimaryDarkBrush` | `#047857` | Hover de primario / texto sobre Primary |
+| `AccentBrush` | `#EA580C` | **COBRAR** (configurable) |
 | `AccentDarkBrush` | `#C2410C` | Hover de COBRAR |
-| `BackgroundBrush` | `#ECFDF5` | Fondo ventana (verde muy claro) |
+| `BackgroundBrush` | `#F8FAFC` | Fondo ventana (neutro, sin tinte) |
 | `SurfaceBrush` | `#FFFFFF` | Cards, carrito, modales |
-| `MutedBrush` | `#F0F8F6` | Superficies secundarias, filas alternas |
-| `BorderBrush` | `#E1F2ED` | Bordes y separadores |
+| `MutedBrush` | `#F1F5F9` | Superficies secundarias, hover |
+| `BorderBrush` | `#E2E8F0` | Bordes y separadores (hairlines) |
 | `TextPrimaryBrush` | `#0F172A` | Texto principal (contraste 12.5:1 sobre blanco ✓) |
-| `TextSecondaryBrush` | `#475569` | Texto secundario (contraste ≥4.5:1 ✓) |
+| `TextSecondaryBrush` | `#64748B` | Texto secundario (4.76:1 sobre blanco ✓) |
 | `DangerBrush` | `#DC2626` | Errores, eliminar, stock negativo |
 | `WarningBrush` | `#D97706` | Avisos de stock (no bloqueante) |
-| `SuccessBrush` | `#059669` | Confirmaciones, caja abierta |
 
 Regla dura: **nada de hex hardcodeado en las vistas** — todo por `DynamicResource`
 desde App.xaml (tema claro/oscuro futuro sin tocar XAML de pantallas).
@@ -105,22 +106,20 @@ desde App.xaml (tema claro/oscuro futuro sin tocar XAML de pantallas).
 - Montos SIEMPRE `N2` con miles (RD$ 58,203.39), monospaced/tabular para que
   no bailen al cambiar.
 
-### Espaciado (densidad 8/10 — alta)
+### Espaciado (densidad 6/10 — aire sin perder densidad de cajero)
 
-`2 / 4 / 8 / 12 / 16 / 24 / 32` px. Padding estándar de cards: 12px. Gaps de
-grid de productos: 12px. Margen interno del carrito: 16px.
+`4 / 8 / 12 / 16 / 24 / 32` px. Padding estándar de cards: 12px. Gaps de
+grid de productos: 10px. Margen interno del carrito: 16px.
 
-### Sombras (Soft UI — suaves, con profundidad)
+### Sombras (mínimas — Minimalismo Funcional)
 
-- Cards: `0 1px 2px rgba(0,0,0,.05)` (sutil).
-- Carrito/menús: `0 4px 6px rgba(0,0,0,.08)`.
-- Modales: `0 10px 15px rgba(0,0,0,.12)` + scrim negro 50% (p. ej.
-  `#80000000`).
-- Nada de neumorphism (sin dobles sombras internas).
+- Superficies de contenido (cards, carrito, botones): **SIN sombra** —
+  jerarquía por hairlines `BorderBrush` y tipografía.
+- **Única excepción: modales** (sombra suave + scrim `#99000000`).
 
 ### Radio de esquinas
 
-- Cards y botones: 8px. Modales: 12px. Chips de categoría: 999px (píldora).
+- Botones, inputs y cards: **6px**. Modales: 12px. Chips de categoría: 999px (píldora).
 
 ---
 
@@ -159,14 +158,12 @@ grid de productos: 12px. Margen interno del carrito: 16px.
   suficiente — se venderán igual" (P3).
 
 ### 3.6 Botones de pago (4, siempre visibles)
-- EFECTIVO · TARJETA · TRANSFERENCIA · MIXTO — botones secundarios (borde
-  primary, texto primary), 44px+ alto.
-- Click → modal de cobro correspondiente.
+- EFECTIVO · TARJETA · TRANSFERENCIA · MIXTO — botones de superficie (blanco +
+  hairline), 44px+ alto. Hover: `MutedBrush` + borde `PrimaryBrush`.
 
 ### 3.7 COBRAR (botón primario global)
 - 100% del ancho del panel derecho, 52px alto, fondo **AccentBrush** (`#EA580C`),
-  texto blanco, bold, F8. Disabled si: carrito vacío, caja cerrada, sin permisos.
-- Hover: `AccentDarkBrush`. Press: sin cambio de layout (solo opacity/fondo).
+  texto blanco, bold, F8. Hover: `AccentDarkBrush`. Sin sombra, sin cambios de layout.
 
 ### 3.8 Header
 - Izquierda: marca "Uenta POS" (logo + nombre).
@@ -255,9 +252,11 @@ Todo accionable por teclado (regla UX de la skill: keyboard navigation, High).
 
 ## 7. Anti-patrones a evitar (de MASTER + específicos POS)
 
-- ❌ Flat sin profundidad (usar las sombras del §2)
+- ❌ Sombras decorativas en superficies de contenido (solo modales)
+- ❌ Hover con elevación/transform (layout shift)
+- ❌ Más de 2 acentos en pantalla (Primary + Accent)
 - ❌ Texto denso sin jerarquía (el TOTAL y COBRAR mandan)
-- ❌ Animaciones llamativas (motion 2/10: solo micro-transiciones)
+- ❌ Animaciones llamativas (motion 1/10: solo micro-transiciones de hover/foco)
 - ❌ Emojis como iconos de sistema
 - ❌ Inputs que pierden el foco tras cada escaneo (rompe el flujo del cajero)
 - ❌ Ocultar métodos de pago en menús (deben estar a un click)

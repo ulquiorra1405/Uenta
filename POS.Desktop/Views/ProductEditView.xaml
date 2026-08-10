@@ -68,15 +68,16 @@
         </Grid>
 
         <!-- Mensaje de error / aviso -->
-        <Border Grid.Row="2" Margin="0,16,0,0" Padding="12,10" CornerRadius="4"
-                Background="#FDECEC" BorderBrush="#E74C3C" BorderThickness="1"
+        <Border Grid.Row="2" Margin="0,16,0,0" Padding="12,10" CornerRadius="6"
+                Background="{StaticResource DangerLightBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
                 Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVis}}">
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="#C0392B" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" />
         </Border>
 
         <!-- Acciones -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="Cancelar" Command="{Binding CancelCommand}" Padding="20,8" />
+            <Button Content="Cancelar" Command="{Binding CancelCommand}" Padding="20,8"
+                    Style="{StaticResource SecondaryButton}" />
             <Button Content="Guardar" Command="{Binding SaveCommand}" Padding="20,8"
                     Margin="8,0,0,0" FontWeight="SemiBold" IsDefault="True" />
         </StackPanel>
