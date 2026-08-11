@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:enums="clr-namespace:POS.Domain.Enums;assembly=POS.Domain"
+             xmlns:vm="clr-namespace:POS.Desktop.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="760" d:DesignWidth="1280"
              FocusManager.FocusedElement="{Binding ElementName=SearchBox}">
@@ -202,17 +203,15 @@
                                                         <Style TargetType="Border">
                                                             <Setter Property="Visibility" Value="Visible" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding LineDiscount}" Value="0">
+                                                                <DataTrigger Binding="{Binding HasDiscount}" Value="False">
                                                                     <Setter Property="Visibility" Value="Collapsed" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
                                                     <TextBlock FontSize="10.5" FontWeight="Bold"
-                                                               Foreground="{StaticResource PrimaryDarkBrush}">
-                                                        <Run Text="-RD$ " />
-                                                        <Run Text="{Binding LineDiscount, StringFormat={}{0:N2}}" />
-                                                    </TextBlock>
+                                                               Foreground="{StaticResource PrimaryDarkBrush}"
+                                                               Text="{Binding DiscountBadgeText}" />
                                                 </Border>
                                                 <TextBlock Text="{Binding LineTotal, StringFormat=RD$ {0:N2}}"
                                                            Style="{StaticResource MoneyText}" FontSize="14" />
@@ -259,18 +258,71 @@
                                             </StackPanel>
                                         </Grid>
 
-                                        <!-- Descuento inline -->
+                                        <!-- Descuento inline: toggle %/RD$ + input + preview en vivo -->
                                         <Grid Margin="0,6,0,0" Visibility="{Binding IsDiscountOpen, Converter={StaticResource BoolToVis}}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBox Grid.Column="0" Text="{Binding DiscountPercentText, UpdateSourceTrigger=PropertyChanged}"
-                                                     Padding="8,5" FontSize="12" ToolTip="Porcentaje de descuento"
-                                                     AutomationProperties.Name="PorcentajeLinea" />
-                                            <Button Grid.Column="1" Content="Aplicar" Margin="6,0,0,0" Padding="12,5" FontSize="12"
+
+                                            <!-- Toggle del tipo de descuento (chips, accesible por teclado) -->
+                                            <UniformGrid Grid.Row="0" Grid.Column="0" Columns="2" Margin="0,0,6,0">
+                                                <Button Content="%" Margin="0,0,2,0" Padding="10,5" FontSize="12"
+                                                        AutomationProperties.Name="ModoPorcentaje"
+                                                        Command="{Binding SetDiscountModeCommand}"
+                                                        CommandParameter="{x:Static vm:LineDiscountMode.Percent}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource PaymentButton}">
+                                                            <Setter Property="Padding" Value="10,5" />
+                                                            <Setter Property="FontSize" Value="12" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding DiscountMode}" Value="{x:Static vm:LineDiscountMode.Percent}">
+                                                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                                                    <Setter Property="Foreground" Value="White" />
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                                <Button Content="RD$" Margin="2,0,0,0" Padding="10,5" FontSize="12"
+                                                        AutomationProperties.Name="ModoMonto"
+                                                        Command="{Binding SetDiscountModeCommand}"
+                                                        CommandParameter="{x:Static vm:LineDiscountMode.Amount}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource PaymentButton}">
+                                                            <Setter Property="Padding" Value="10,5" />
+                                                            <Setter Property="FontSize" Value="12" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding DiscountMode}" Value="{x:Static vm:LineDiscountMode.Amount}">
+                                                                    <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                                                    <Setter Property="Foreground" Value="White" />
+                                                                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </UniformGrid>
+
+                                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DiscountInputText, UpdateSourceTrigger=PropertyChanged}"
+                                                     Padding="8,5" FontSize="12"
+                                                     ToolTip="Escribe el % (ej: 5) o el monto en RD$ (ej: 30.00) según el modo"
+                                                     AutomationProperties.Name="DescuentoLineaInput" />
+                                            <Button Grid.Row="0" Grid.Column="2" Content="Aplicar" Margin="6,0,0,0" Padding="12,5" FontSize="12"
                                                     Command="{Binding DataContext.ApplyLineDiscountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}" AutomationProperties.Name="AplicarLinea" />
+
+                                            <!-- Preview en vivo: muestra el monto exacto antes de aplicar -->
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                                       Text="{Binding DiscountPreviewText}" FontSize="11"
+                                                       Foreground="{StaticResource PrimaryDarkBrush}" Margin="0,4,0,0"
+                                                       HorizontalAlignment="Right" />
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -507,6 +559,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -518,11 +571,21 @@
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="ITBIS 18% (incluido)" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
                             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Itbis, StringFormat=RD$ {0:N2}}" FontSize="13" Margin="0,4,0,0" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Descuento global" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Descuento global (RD$)" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
                             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding GlobalDiscount, UpdateSourceTrigger=PropertyChanged}"
                                      Width="110" Padding="6,3" FontSize="12" HorizontalContentAlignment="Right"
                                      AutomationProperties.Name="DescuentoGlobal"
-                                     ToolTip="Descuento global en RD$ (tope por rol en un próximo incremento)" Margin="0,4,0,0" />
+                                     ToolTip="Monto fijo en RD$: no cambia solo al quitar productos" Margin="0,4,0,0" />
+
+                            <!-- Aviso: el descuento global supera el subtotal (COBRAR queda bloqueado) -->
+                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,6,0,0"
+                                        Visibility="{Binding GlobalDiscountExceedsSubtotal, Converter={StaticResource BoolToVis}}">
+                                <Path Data="{StaticResource WarningIcon}" Stroke="{StaticResource DangerBrush}"
+                                      StrokeThickness="1.8" Width="13" Height="13" Stretch="Uniform"
+                                      VerticalAlignment="Center" Margin="0,0,5,0" />
+                                <TextBlock Text="El descuento supera el subtotal — ajusta el monto" FontSize="11"
+                                           Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
                         </Grid>
 
                         <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,10" />

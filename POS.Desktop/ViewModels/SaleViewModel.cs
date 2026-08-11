@@ -8,6 +8,9 @@ using POS.Domain.Enums;
 
 namespace POS.Desktop.ViewModels;
 
+/// <summary>Tipo de descuento de línea: porcentaje (dinámico, sigue a la cantidad) o monto fijo.</summary>
+public enum LineDiscountMode { Percent, Amount }
+
 /// <summary>
 /// Línea del carrito. Notifica cambios de cantidad/descuento para que el
 /// ViewModel principal recalcule totales.
@@ -24,16 +27,56 @@ public partial class CartLineViewModel : ObservableObject
     private decimal _quantity = 1;
 
     [ObservableProperty]
-    private decimal _lineDiscount;
+    private LineDiscountMode _discountMode = LineDiscountMode.Percent;
+
+    /// <summary>% persistido del descuento (0 = sin descuento por %). Dinámico: recalcula con la cantidad.</summary>
+    [ObservableProperty]
+    private decimal _discountPercent;
+
+    /// <summary>Monto fijo en RD$ (0 = sin descuento por monto). Promesa literal: no cambia con la cantidad.</summary>
+    [ObservableProperty]
+    private decimal _fixedDiscount;
 
     [ObservableProperty]
     private bool _isDiscountOpen;
 
+    /// <summary>Valor escrito en el panel de descuento (se interpreta según el modo).</summary>
     [ObservableProperty]
-    private string _discountPercentText = string.Empty;
+    private string _discountInputText = string.Empty;
 
-    /// <summary>Total de la línea: (precio × cantidad) − descuento.</summary>
-    public decimal LineTotal => Math.Round(UnitPrice * Quantity - LineDiscount, 2, MidpointRounding.AwayFromZero);
+    /// <summary>Total bruto de la línea (precio × cantidad, sin descuento).</summary>
+    public decimal LineGross => Math.Round(UnitPrice * Quantity, 2, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// Monto efectivo de descuento: en % sigue a la cantidad (10 items → 500, 5 → 250);
+    /// en monto fijo es una promesa literal con tope en el total de la línea.
+    /// </summary>
+    public decimal LineDiscount
+    {
+        get
+        {
+            if (DiscountMode == LineDiscountMode.Percent)
+            {
+                var d = Math.Round(LineGross * DiscountPercent / 100m, 2, MidpointRounding.AwayFromZero);
+                return Math.Min(d, LineGross);
+            }
+            return Math.Min(FixedDiscount, LineGross);
+        }
+    }
+
+    public decimal LineTotal => Math.Round(LineGross - LineDiscount, 2, MidpointRounding.AwayFromZero);
+
+    public bool HasDiscount => LineDiscount > 0;
+
+    /// <summary>Badge del descuento: "-RD$ 250.00 (5%)" en %, "-RD$ 30.00" en fijo.</summary>
+    public string DiscountBadgeText => HasDiscount
+        ? DiscountMode == LineDiscountMode.Percent
+            ? $"-RD$ {LineDiscount:N2} ({DiscountPercent:0.##}%)"
+            : $"-RD$ {LineDiscount:N2}"
+        : string.Empty;
+
+    /// <summary>Preview en vivo del panel: "-RD$ 4.00" según el input actual (sin aplicar).</summary>
+    public string DiscountPreviewText { get; private set; } = string.Empty;
 
     /// <summary>Aviso no bloqueante: se vende más de lo que hay (decisión P3).</summary>
     public bool LowStock => Quantity > Stock;
@@ -41,23 +84,80 @@ public partial class CartLineViewModel : ObservableObject
     /// <summary>Se dispara cuando cambia cantidad o descuento (para recalcular totales).</summary>
     public event Action? Changed;
 
-    partial void OnQuantityChanged(decimal value)
+    [RelayCommand]
+    private void SetDiscountMode(LineDiscountMode mode)
     {
-        OnPropertyChanged(nameof(LineTotal));
-        OnPropertyChanged(nameof(LowStock));
-        Changed?.Invoke();
+        if (DiscountMode != mode)
+        {
+            DiscountMode = mode;
+            // Al cambiar el modo, el input se re-interpreta: el preview se actualiza solo.
+        }
     }
 
-    partial void OnLineDiscountChanged(decimal value)
+    partial void OnQuantityChanged(decimal value)
     {
-        OnPropertyChanged(nameof(LineTotal));
-        Changed?.Invoke();
+        UpdateDiscountDerived();
+        OnPropertyChanged(nameof(LowStock));
+        UpdatePreview();
     }
+
+    partial void OnDiscountModeChanged(LineDiscountMode value)
+    {
+        UpdateDiscountDerived();
+        UpdatePreview();
+    }
+
+    partial void OnDiscountPercentChanged(decimal value) => UpdateDiscountDerived();
+
+    partial void OnFixedDiscountChanged(decimal value) => UpdateDiscountDerived();
+
+    partial void OnDiscountInputTextChanged(string value) => UpdatePreview();
 
     partial void OnIsDiscountOpenChanged(bool value)
     {
-        if (value && string.IsNullOrEmpty(DiscountPercentText))
-            DiscountPercentText = "0";
+        if (value)
+        {
+            // Pre-cargar el estado real al reabrir: modo + valor aplicados (nada oculto).
+            DiscountInputText = DiscountMode == LineDiscountMode.Percent
+                ? DiscountPercent > 0
+                    ? DiscountPercent.ToString("0.##", CultureInfo.InvariantCulture)
+                    : string.Empty
+                : FixedDiscount > 0
+                    ? FixedDiscount.ToString("0.##", CultureInfo.InvariantCulture)
+                    : string.Empty;
+        }
+        UpdatePreview();
+    }
+
+    private void UpdateDiscountDerived()
+    {
+        OnPropertyChanged(nameof(LineDiscount));
+        OnPropertyChanged(nameof(LineTotal));
+        OnPropertyChanged(nameof(HasDiscount));
+        OnPropertyChanged(nameof(DiscountBadgeText));
+        Changed?.Invoke();
+    }
+
+    private void UpdatePreview()
+    {
+        if (decimal.TryParse(DiscountInputText, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) && v > 0)
+        {
+            if (DiscountMode == LineDiscountMode.Percent)
+            {
+                var pct = Math.Clamp(v, 0, 100);
+                var d = Math.Round(LineGross * pct / 100m, 2, MidpointRounding.AwayFromZero);
+                DiscountPreviewText = $"-RD$ {Math.Min(d, LineGross):N2}";
+            }
+            else
+            {
+                DiscountPreviewText = $"-RD$ {Math.Min(v, LineGross):N2}";
+            }
+        }
+        else
+        {
+            DiscountPreviewText = string.Empty;
+        }
+        OnPropertyChanged(nameof(DiscountPreviewText));
     }
 }
 
@@ -412,10 +512,9 @@ public partial class SaleViewModel : ViewModelBase
     [ObservableProperty]
     private decimal _globalDiscount;
 
-    // % del subtotal que el monto escrito representaba al momento de capturarlo.
-    // Permite escalar el descuento global a la baja cuando el ticket se encoge
-    // (quitar líneas, con o sin descuento de línea) sin que el monto quede clavado.
-    private decimal _globalDiscountPct;
+    /// <summary>True cuando el descuento global (monto fijo) supera el subtotal: aviso + bloquear COBRAR.</summary>
+    [ObservableProperty]
+    private bool _globalDiscountExceedsSubtotal;
 
     [ObservableProperty]
     private decimal _total;
@@ -425,13 +524,12 @@ public partial class SaleViewModel : ViewModelBase
 
     partial void OnGlobalDiscountChanged(decimal value)
     {
-        if (!_isRecalculating)
+        // Descuento global = monto fijo prometido por el cajero. Nunca se muta solo;
+        // si es negativo, se bloquea (un -5 inflaría el total como "recargo" accidental).
+        if (value < 0)
         {
-            // Capturar el % que el monto representa del subtotal actual.
-            // Si no hay ticket (Subtotal 0) o el monto es 0, no hay % que conservar.
-            _globalDiscountPct = Subtotal > 0 && value > 0
-                ? Math.Min(value / Subtotal, 1m)
-                : 0m;
+            GlobalDiscount = 0; // re-set con 0 (no negativo) → recalcula normal
+            return;
         }
         RecalculateTotals();
     }
@@ -502,13 +600,18 @@ public partial class SaleViewModel : ViewModelBase
     {
         if (line is null) return;
 
-        if (decimal.TryParse(line.DiscountPercentText, NumberStyles.Number, CultureInfo.InvariantCulture, out var pct))
+        if (decimal.TryParse(line.DiscountInputText, NumberStyles.Number, CultureInfo.InvariantCulture, out var value))
         {
-            pct = Math.Clamp(pct, 0, 100);
-            var discount = Math.Round(line.UnitPrice * line.Quantity * pct / 100m, 2, MidpointRounding.AwayFromZero);
-
-            // El descuento no puede superar el total de la línea.
-            line.LineDiscount = Math.Min(discount, line.UnitPrice * line.Quantity);
+            if (line.DiscountMode == LineDiscountMode.Percent)
+            {
+                // % persistente: el descuento sigue a la cantidad (10 items → 500, 5 → 250).
+                line.DiscountPercent = Math.Clamp(value, 0, 100);
+            }
+            else
+            {
+                // Monto fijo: promesa literal (el clamp al total de la línea vive en LineDiscount).
+                line.FixedDiscount = Math.Max(value, 0);
+            }
         }
 
         line.IsDiscountOpen = false;
@@ -523,29 +626,12 @@ public partial class SaleViewModel : ViewModelBase
         _isRecalculating = true;
         try
         {
-            var newSubtotal = CartLines.Sum(l => l.LineTotal);
+            Subtotal = CartLines.Sum(l => l.LineTotal);
 
-            // Descuento global: el monto que escribió el cajero captura un % del subtotal
-            // (pct = monto / subtotal al momento de escribirlo). Si el ticket SE ENCOGE
-            // (se quitan líneas, con o sin descuento de línea), el monto baja proporcional
-            // a ese % — el descuento global nunca queda clavado ni se come el total.
-            // Nunca sube solo al agregar líneas: el control del monto lo tiene el cajero.
-            if (_globalDiscountPct > 0 && newSubtotal < Subtotal)
-            {
-                var scaled = Math.Round(newSubtotal * _globalDiscountPct, 2, MidpointRounding.AwayFromZero);
-                if (scaled < GlobalDiscount)
-                    GlobalDiscount = scaled;
-            }
-            else if (newSubtotal == 0)
-            {
-                GlobalDiscount = 0;
-            }
-
-            Subtotal = newSubtotal;
-
-            // Red de seguridad: nunca descontar más del subtotal.
-            if (GlobalDiscount > Subtotal)
-                GlobalDiscount = Subtotal;
+            // Descuento global: monto fijo prometido por el cajero — NUNCA se muta solo.
+            // Si supera el subtotal, se avisa y se bloquea COBRAR hasta ajustarlo
+            // (validación honesta, no auto-ajuste silencioso).
+            GlobalDiscountExceedsSubtotal = GlobalDiscount > Subtotal;
 
             var total = Math.Round(Subtotal - GlobalDiscount, 2, MidpointRounding.AwayFromZero);
             if (total < 0) total = 0;
@@ -571,11 +657,11 @@ public partial class SaleViewModel : ViewModelBase
 
     /// <summary>Se puede iniciar el cobro (COBRAR / EFECTIVO / F8): ticket con líneas, total > 0,
     /// sin modal abierto y sin línea pendiente sin resolver (regla 3.2).</summary>
-    private bool CanStartPayment() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry;
+    private bool CanStartPayment() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry && !GlobalDiscountExceedsSubtotal;
 
     /// <summary>Elegir método de pago (chips TARJETA/TRANSFERENCIA/MIXTO): mismo bloqueo que cobrar,
     /// pero permitido dentro del modal (ahí IsPaymentOpen ya es true).</summary>
-    private bool CanChooseMethod() => CartLines.Count > 0 && Total > 0 && !HasPendingEntry;
+    private bool CanChooseMethod() => CartLines.Count > 0 && Total > 0 && !HasPendingEntry && !GlobalDiscountExceedsSubtotal;
 
     // ─────────────────────────── Cobro ───────────────────────────
 
