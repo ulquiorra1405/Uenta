@@ -28,6 +28,7 @@ public partial class SaleView : UserControl
             if (DataContext is SaleViewModel vm)
             {
                 vm.FocusSearchRequested += FocusSearch;
+                vm.CatalogFocusRequested += FocusCatalogSearch;
                 FocusSearch();
             }
         };
@@ -36,11 +37,16 @@ public partial class SaleView : UserControl
         {
             _clockTimer.Stop();
             if (DataContext is SaleViewModel vm)
+            {
                 vm.FocusSearchRequested -= FocusSearch;
+                vm.CatalogFocusRequested -= FocusCatalogSearch;
+            }
         };
     }
 
     private void UpdateClock() => ClockText.Text = DateTime.Now.ToString("HH:mm");
 
     private void FocusSearch() => SearchBox.Focus();
+
+    private void FocusCatalogSearch() => CatalogSearchBox.Focus();
 }

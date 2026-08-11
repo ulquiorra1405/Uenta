@@ -368,3 +368,28 @@ agregaría [Imprimir] [PDF] [Nueva venta].
 - ❌ Inputs que pierden el foco tras cada escaneo (rompe el loop del cajero)
 - ❌ Ocultar métodos de pago en menús (deben estar a un click)
 - ❌ Botones que cambian de tamaño al hacer hover (layout shift)
+
+---
+
+## 9. Estado de implementación (11-ago-2026)
+
+Rediseño ticket-centered (modelo B) ejecutado **por pasos** (verificación rápida en cada uno):
+
+| # | Paso | Estado |
+|---|------|--------|
+| 1 | **Layout ticket-centered**: ticket (izq, 60%) + cobro (der, 40%); catálogo a demanda en popup (F2) que agrega sin cerrar; input de código/nombre al pie del ticket | ✅ HECHO (commit 11-ago) |
+| 2 | **Línea de entrada con reglas del modelo B**: match único por código → se rellena sola; no-código → dropdown de sugerencias por nombre (debounce 250ms, precio+stock); UNA línea pendiente a la vez; COBRAR bloqueado con línea pendiente (borde warning); escáner rellena + foco avanza a nueva línea | ⏳ |
+| 3 | **Pulido**: contador "Agregados: N" en el popup, atajos finos, estados vacíos | ⏳ |
+
+Detalles del paso 1 (11-ago):
+- SaleView.xaml reestructurado: 60*/Auto/40* (ticket | separador | cobro). El panel de cobro
+  (totales, métodos, COBRAR) se movió tal cual a la columna derecha; el carrito vive a la izquierda.
+- Input de búsqueda al pie del ticket con placeholder "Escribe código o nombre… (Enter agrega)".
+- Popup catálogo (IsCatalogOpen): reutiliza Products/CategoryFilters/SearchText, buscador propio
+  con foco (evento CatalogFocusRequested), agrega **sin cerrar** (modo 3), cierra con Esc/X/Cerrar.
+- AutomationProperties.Name ASCII en botones clave (AbrirCatalogo/CerrarCatalogo) — nombres UIA
+  estables (a11y + verificable por script sin problemas de encoding).
+- CancelOverlay: Esc cierra catálogo primero, si no el modal de cobro.
+- Verificado: build 0/0, 26/26 tests, capturas DPI-aware (popup abre → agrega sin cerrar → ticket
+  conserva línea al cerrar). Nota: Teams al frente estorbaba las capturas; traer ventana al frente
+  con SetForegroundWindow antes de capturar.

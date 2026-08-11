@@ -95,7 +95,7 @@ public partial class SaleViewModel : ViewModelBase
     /// <summary>La vista se suscribe para devolver el foco al buscador (loop de escaneo).</summary>
     public event Action? FocusSearchRequested;
 
-    // ─────────────────────────── Catálogo ───────────────────────────
+    // ─────────────────────────── Catálogo (a demanda, popup F2) ───────────────────────────
 
     public ObservableCollection<ProductDto> Products { get; } = [];
     public ObservableCollection<CategoryFilterItem> CategoryFilters { get; } = [];
@@ -108,6 +108,27 @@ public partial class SaleViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _catalogStatus = string.Empty;
+
+    /// <summary>Popup catálogo visual (modelo B): se abre con F2 y agrega sin cerrarse.</summary>
+    [ObservableProperty]
+    private bool _isCatalogOpen;
+
+    [RelayCommand]
+    private void OpenCatalog()
+    {
+        IsCatalogOpen = true;
+        CatalogFocusRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private void CloseCatalog()
+    {
+        IsCatalogOpen = false;
+        FocusSearchRequested?.Invoke();
+    }
+
+    /// <summary>La vista se suscribe para enfocar el buscador del popup catálogo.</summary>
+    public event Action? CatalogFocusRequested;
 
     partial void OnSearchTextChanged(string value) => ScheduleSearch();
 
@@ -509,10 +530,16 @@ public partial class SaleViewModel : ViewModelBase
     [RelayCommand]
     private void FocusSearch() => FocusSearchRequested?.Invoke();
 
-    /// <summary>Esc: cierra el modal de cobro si está abierto.</summary>
+    /// <summary>Esc: cierra el catálogo si está abierto; si no, el modal de cobro.</summary>
     [RelayCommand]
     private void CancelOverlay()
     {
+        if (IsCatalogOpen)
+        {
+            CloseCatalog();
+            return;
+        }
+
         if (IsPaymentOpen && !IsProcessing)
             IsPaymentOpen = false;
     }
