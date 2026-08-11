@@ -627,3 +627,21 @@ SearchText == "" AND IsKeyboardFocused(SearchBox) == False). Al enfocar (clic, e
 Enter) desaparece ? el caret queda en un campo limpio. Comportamiento placeholder estándar.
 Verificado: con foco ? oculto; sin foco ? visible.
 Regla: **un hint superpuesto nunca debe convivir con el caret — ocultarlo al enfocar.**
+
+## Pulido moderno línea de entrada (11-ago, commit 99d61a4)
+
+Bryan (19:22) pidió modernizar; propuse 3 mejoras, aprobadas (19:25):
+
+1. **Chip 'Enter' en el hint** (estilo GitHub/Linear): "(Enter agrega)" ? chip pequeño
+   (Border redondeado, MutedBrush + hairline, texto "Enter" 10.5 SemiBold). Misma regla de
+   visibilidad (vacío + sin foco). Las teclas se comunican como keycaps, no con palabras.
+2. **Lupa verde al enfocar**: Path.Style con DataTrigger (ElementName=SearchBox,
+   IsKeyboardFocused) ? Stroke TextSecondaryBrush?PrimaryBrush. El Stroke se movió al
+   Setter del Style (un valor local ganaría al trigger). Refuerza el estado activo.
+3. **Aviso fuera del campo**: "Línea sin completar" sale del TextBox (donde competía con
+   códigos largos y el caret) a una fila nueva debajo, izquierda, altura fija 18px
+   (espacio reservado ? sin salto de layout). El borde naranja queda como señal secundaria.
+
+Reglas nuevas: (a) las teclas en hints se muestran como keycaps, no texto; (b) iconos que
+cambian de color con el foco: el color debe vivir en el Style (Setter), no en el elemento;
+(c) mensajes de validación fuera del campo de entrada, en fila de altura reservada.
