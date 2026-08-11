@@ -266,10 +266,11 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <TextBox Grid.Column="0" Text="{Binding DiscountPercentText, UpdateSourceTrigger=PropertyChanged}"
-                                                     Padding="8,5" FontSize="12" ToolTip="Porcentaje de descuento" />
+                                                     Padding="8,5" FontSize="12" ToolTip="Porcentaje de descuento"
+                                                     AutomationProperties.Name="PorcentajeLinea" />
                                             <Button Grid.Column="1" Content="Aplicar" Margin="6,0,0,0" Padding="12,5" FontSize="12"
                                                     Command="{Binding DataContext.ApplyLineDiscountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}" />
+                                                    CommandParameter="{Binding}" AutomationProperties.Name="AplicarLinea" />
                                         </Grid>
                                     </StackPanel>
                                 </Border>

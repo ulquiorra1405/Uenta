@@ -412,13 +412,29 @@ public partial class SaleViewModel : ViewModelBase
     [ObservableProperty]
     private decimal _globalDiscount;
 
+    // % del subtotal que el monto escrito representaba al momento de capturarlo.
+    // Permite escalar el descuento global a la baja cuando el ticket se encoge
+    // (quitar líneas, con o sin descuento de línea) sin que el monto quede clavado.
+    private decimal _globalDiscountPct;
+
     [ObservableProperty]
     private decimal _total;
 
     [ObservableProperty]
     private bool _hasLowStockWarnings;
 
-    partial void OnGlobalDiscountChanged(decimal value) => RecalculateTotals();
+    partial void OnGlobalDiscountChanged(decimal value)
+    {
+        if (!_isRecalculating)
+        {
+            // Capturar el % que el monto representa del subtotal actual.
+            // Si no hay ticket (Subtotal 0) o el monto es 0, no hay % que conservar.
+            _globalDiscountPct = Subtotal > 0 && value > 0
+                ? Math.Min(value / Subtotal, 1m)
+                : 0m;
+        }
+        RecalculateTotals();
+    }
 
     [RelayCommand]
     private void AddProduct(ProductDto? product)
@@ -507,10 +523,27 @@ public partial class SaleViewModel : ViewModelBase
         _isRecalculating = true;
         try
         {
-            Subtotal = CartLines.Sum(l => l.LineTotal);
+            var newSubtotal = CartLines.Sum(l => l.LineTotal);
 
-            // El descuento global nunca supera el subtotal: si se quitan líneas, baja con él
-            // (evita estados inconsistentes tipo subtotal 50 con descuento 80 → total 0 oculto).
+            // Descuento global: el monto que escribió el cajero captura un % del subtotal
+            // (pct = monto / subtotal al momento de escribirlo). Si el ticket SE ENCOGE
+            // (se quitan líneas, con o sin descuento de línea), el monto baja proporcional
+            // a ese % — el descuento global nunca queda clavado ni se come el total.
+            // Nunca sube solo al agregar líneas: el control del monto lo tiene el cajero.
+            if (_globalDiscountPct > 0 && newSubtotal < Subtotal)
+            {
+                var scaled = Math.Round(newSubtotal * _globalDiscountPct, 2, MidpointRounding.AwayFromZero);
+                if (scaled < GlobalDiscount)
+                    GlobalDiscount = scaled;
+            }
+            else if (newSubtotal == 0)
+            {
+                GlobalDiscount = 0;
+            }
+
+            Subtotal = newSubtotal;
+
+            // Red de seguridad: nunca descontar más del subtotal.
             if (GlobalDiscount > Subtotal)
                 GlobalDiscount = Subtotal;
 
