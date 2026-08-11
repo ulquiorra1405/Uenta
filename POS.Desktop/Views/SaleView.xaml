@@ -195,15 +195,15 @@
                                                 </TextBlock>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <!-- Descuento aplicado -->
+                                                <!-- Descuento aplicado (solo si > 0; el trigger estaba invertido: se ocultaba con descuento y mostraba "-RD$ 0.00" sin él) -->
                                                 <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6"
                                                         Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Setter Property="Visibility" Value="Visible" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding LineDiscount}" Value="0">
-                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -227,18 +227,21 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" Orientation="Horizontal">
                                                 <Button Style="{StaticResource IconButton}" ToolTip="Disminuir"
+                                                        AutomationProperties.Name="DisminuirCantidad"
                                                         Command="{Binding DataContext.DecreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}">
                                                     <Path Data="{StaticResource MinusIcon}" Stroke="{StaticResource TextPrimaryBrush}"
                                                           StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
                                                 </Button>
                                                 <Button Style="{StaticResource IconButton}" ToolTip="Aumentar" Margin="4,0,0,0"
+                                                        AutomationProperties.Name="AumentarCantidad"
                                                         Command="{Binding DataContext.IncreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}">
                                                     <Path Data="{StaticResource PlusIcon}" Stroke="{StaticResource TextPrimaryBrush}"
                                                           StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
                                                 </Button>
                                                 <Button Style="{StaticResource IconButton}" ToolTip="Descuento de línea" Margin="4,0,0,0"
+                                                        AutomationProperties.Name="DescuentoLinea"
                                                         Command="{Binding DataContext.ToggleLineDiscountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}">
                                                     <Path Data="{StaticResource PercentIcon}" Stroke="{StaticResource TextPrimaryBrush}"
@@ -247,6 +250,7 @@
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
                                                 <Button Style="{StaticResource IconButton}" ToolTip="Quitar línea"
+                                                        AutomationProperties.Name="QuitarLinea"
                                                         Command="{Binding DataContext.RemoveLineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}">
                                                     <Path Data="{StaticResource CloseIcon}" Stroke="{StaticResource DangerBrush}"
@@ -274,15 +278,20 @@
                     </ItemsControl>
                     </ScrollViewer>
 
-                    <!-- Estado vacío del ticket (solo cuando no hay líneas) -->
+                    <!-- Estado vacío del ticket (solo cuando no hay líneas Y el dropdown no está abierto:
+                         al escribir, el dropdown re-centra la columna y el indicador saltaría) -->
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
                         <StackPanel.Style>
                             <Style TargetType="StackPanel">
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding CartLines.Count}" Value="0">
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding CartLines.Count}" Value="0" />
+                                            <Condition Binding="{Binding IsSuggestionsOpen}" Value="False" />
+                                        </MultiDataTrigger.Conditions>
                                         <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
+                                    </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
@@ -511,6 +520,7 @@
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Descuento global" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
                             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding GlobalDiscount, UpdateSourceTrigger=PropertyChanged}"
                                      Width="110" Padding="6,3" FontSize="12" HorizontalContentAlignment="Right"
+                                     AutomationProperties.Name="DescuentoGlobal"
                                      ToolTip="Descuento global en RD$ (tope por rol en un próximo incremento)" Margin="0,4,0,0" />
                         </Grid>
 

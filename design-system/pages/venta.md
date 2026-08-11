@@ -467,3 +467,31 @@ Detalles del paso 3 (11-ago):
 - Estado vacío del catálogo: "Sin resultados — <término>" centrado cuando hay 0 productos y
   no está cargando (MultiDataTrigger).
 - Verificado: build 0/0, 26/26 tests, capturas (vacío → popup → Agregados: 2 → Sin resultados).
+
+Fix de 4 bugs reportados por Bryan (11-ago, verificado con UIA + capturas):
+1. **Badge de descuento de línea invertido**: el trigger mostraba el badge con LineDiscount=0
+   ("-RD$ 0.00" en cada línea sin descuento) y lo ocultaba con descuento aplicado. Fix:
+   default Visible + DataTrigger Value="0" → Collapsed. Mismo patrón invertido que el badge
+   de Agregados del paso 3 — ojo con triggers de badge.
+2. **Descuento global no bajaba al quitar líneas**: al quitar un item, GlobalDiscount quedaba
+   igual → subtotal 50 con descuento 80 → total 0 oculto (negativo enmascarado) y el recibo
+   inconsistente (SaleService lo rechazaba con DISCOUNT_EXCEEDS_TOTAL). Fix: clamp en
+   `RecalculateTotals` — `if (GlobalDiscount > Subtotal) GlobalDiscount = Subtotal;` con
+   guarda anti-recursión `_isRecalculating` (OnGlobalDiscountChanged → RecalculateTotals).
+3. **Dropdown afectaba el indicador de ticket vacío**: con carrito vacío, abrir el dropdown
+   (fila en flujo) re-centraba el placeholder y lo hacía saltar. Fix: el placeholder ahora se
+   muestra solo con `CartLines.Count == 0` Y `IsSuggestionsOpen == False` (MultiDataTrigger).
+4. **Solo EFECTIVO/COBRAR se deshabilitaban con línea pendiente**: TARJETA/TRANSFERENCIA/MIXTO
+   usaban SetMethodCommand/OpenMixedCommand sin CanExecute → abrían el modal de cobro con la
+   línea sin resolver (bypass de la regla 3.2). Fix: `CanStartPayment` (COBRAR/EFECTIVO/F8:
+   cart > 0, total > 0, !modal, !pendiente) y `CanChooseMethod` (chips: igual pero sin
+   !IsPaymentOpen, para no romper los chips dentro del modal) + NotifyCanExecuteChangedFor en
+   HasPendingEntry y refresco explícito de los 3 comandos en RecalculateTotals (agregar desde
+   el catálogo no toca SearchText → sin notificación automática).
+- Accesibilidad: los IconButton de línea (− + % X) no tenían AutomationProperties.Name (falla
+   del checklist). Se agregaron: DisminuirCantidad/AumentarCantidad/DescuentoLinea/QuitarLinea.
+  El TextBox de descuento global ahora tiene AutomationProperties.Name="DescuentoGlobal".
+- Verificado con UIA end-to-end: vacío → los 5 botones disabled; "ju" → dropdown SIN "Ticket
+  vacío"; Enter → item → 5 botones enabled; "zzz" → 5 botones disabled; 50% → badge
+  "-RD$ 40.00" visible; GlobalDiscount 999 → clamp 40; quitar línea → 0.00. Build 0/0,
+  42/42 tests.

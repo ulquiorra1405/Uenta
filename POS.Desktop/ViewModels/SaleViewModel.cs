@@ -125,7 +125,7 @@ public partial class SaleViewModel : ViewModelBase
 
     /// <summary>Línea con texto sin resolver: COBRAR bloqueado + borde warning (regla 3.2).</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CobrarCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CobrarCommand), nameof(SetMethodCommand), nameof(OpenMixedCommand))]
     private bool _hasPendingEntry;
 
     private CancellationTokenSource? _entryDebounceCts;
@@ -499,20 +499,50 @@ public partial class SaleViewModel : ViewModelBase
         RecalculateTotals();
     }
 
+    private bool _isRecalculating;
+
     private void RecalculateTotals()
     {
-        Subtotal = CartLines.Sum(l => l.LineTotal);
-        var total = Math.Round(Subtotal - GlobalDiscount, 2, MidpointRounding.AwayFromZero);
-        if (total < 0) total = 0;
-        Total = total;
+        if (_isRecalculating) return;
+        _isRecalculating = true;
+        try
+        {
+            Subtotal = CartLines.Sum(l => l.LineTotal);
 
-        // ITBIS 18% incluido en el precio (retail RD): total → base imponible + ITBIS.
-        Itbis = Math.Round(total * SaleService.ItbisRate / (1 + SaleService.ItbisRate), 2, MidpointRounding.AwayFromZero);
+            // El descuento global nunca supera el subtotal: si se quitan líneas, baja con él
+            // (evita estados inconsistentes tipo subtotal 50 con descuento 80 → total 0 oculto).
+            if (GlobalDiscount > Subtotal)
+                GlobalDiscount = Subtotal;
 
-        HasLowStockWarnings = CartLines.Any(l => l.LowStock);
+            var total = Math.Round(Subtotal - GlobalDiscount, 2, MidpointRounding.AwayFromZero);
+            if (total < 0) total = 0;
+            Total = total;
+
+            // ITBIS 18% incluido en el precio (retail RD): total → base imponible + ITBIS.
+            Itbis = Math.Round(total * SaleService.ItbisRate / (1 + SaleService.ItbisRate), 2, MidpointRounding.AwayFromZero);
+
+            HasLowStockWarnings = CartLines.Any(l => l.LowStock);
+
+            // Los comandos de cobro dependen de CartLines/Total: refrescar su CanExecute
+            // (agregar desde el catálogo no toca SearchText, así que la notificación
+            // automática por propiedad no alcanza).
+            CobrarCommand.NotifyCanExecuteChanged();
+            SetMethodCommand.NotifyCanExecuteChanged();
+            OpenMixedCommand.NotifyCanExecuteChanged();
+        }
+        finally
+        {
+            _isRecalculating = false;
+        }
     }
 
-    private bool CanCobrar() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry;
+    /// <summary>Se puede iniciar el cobro (COBRAR / EFECTIVO / F8): ticket con líneas, total > 0,
+    /// sin modal abierto y sin línea pendiente sin resolver (regla 3.2).</summary>
+    private bool CanStartPayment() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry;
+
+    /// <summary>Elegir método de pago (chips TARJETA/TRANSFERENCIA/MIXTO): mismo bloqueo que cobrar,
+    /// pero permitido dentro del modal (ahí IsPaymentOpen ya es true).</summary>
+    private bool CanChooseMethod() => CartLines.Count > 0 && Total > 0 && !HasPendingEntry;
 
     // ─────────────────────────── Cobro ───────────────────────────
 
@@ -565,7 +595,7 @@ public partial class SaleViewModel : ViewModelBase
         ChangeAmount = received > Total ? Math.Round(received - Total, 2, MidpointRounding.AwayFromZero) : 0;
     }
 
-    [RelayCommand(CanExecute = nameof(CanCobrar))]
+    [RelayCommand(CanExecute = nameof(CanStartPayment))]
     private void Cobrar()
     {
         PaymentError = null;
@@ -580,7 +610,7 @@ public partial class SaleViewModel : ViewModelBase
     [RelayCommand]
     private void ClosePayment() => IsPaymentOpen = false;
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanChooseMethod))]
     private void SetMethod(PaymentMethod method)
     {
         PaymentError = null;
@@ -592,7 +622,7 @@ public partial class SaleViewModel : ViewModelBase
         UpdateChange();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanChooseMethod))]
     private void OpenMixed()
     {
         IsMixed = true;
