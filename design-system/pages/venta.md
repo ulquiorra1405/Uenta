@@ -318,9 +318,21 @@ agregaría [Imprimir] [PDF] [Nueva venta].
 | 1 | **Motor de contenido** `ReceiptContentBuilder` (Application, puro): SaleDto → texto 42 chars. Compartido por consola/ESC/POS/PDF | ✅ HECHO (11-ago, commit) |
 | 2 | **Encoder ESC/POS** (puro): texto → bytes (init, centrado, negrita, corte, CP437/850 para ñ/acentos) | ✅ HECHO (11-ago, commit) |
 | 3 | **Envío a impresora** P/Invoke winspool.drv (raw por nombre de impresora, error claro si no existe) | ⏳ |
-| 4 | **PDF** (QuestPDF): mismo contenido, archivo guardable/imprimible | ⏳ |
+| 4 | **PDF** (QuestPDF): mismo contenido, archivo guardable/imprimible | ✅ HECHO (11-ago, commit) |
 | 5 | **Conectar al cobro**: ConfirmPaymentAsync imprime + modal [Imprimir] [PDF] [Nueva venta] | ⏳ |
 | 6 | **Ajustes**: selector de impresora + auto-imprimir (con pantalla de Ajustes de Fase 1) | ⏳ |
+
+**Paso 1 — detalles implementados (11-ago-2026):**
+- `POS.Application/Receipts/ReceiptContentBuilder.cs` — función pura `Build(SaleDto)`.
+  Formato conservado del console (42 chars) con mejoras: descuento por línea
+  (`Desc.: -X.XX` solo si > 0), descuento global en negativo, nombres de pago en
+  español (Efectivo/Tarjeta/Transferencia), cantidades fraccionarias limpias
+  (2 → "2", 0.5 → "0.5"), montos alineados a columna fija (campo 10).
+- `ConsoleReceiptPrinter` delega en el builder (un solo cerebro de layout).
+- Tests: `ReceiptContentBuilderTests` — golden completo + descuentos + métodos de
+  pago + fraccionario + ancho 42. **26/26 tests verdes.**
+- Gotcha: al escribir golden tests con alineación, NO contar espacios a ojo —
+  "50.00"/"36.00" tienen 5 chars (no 6); verificar con lengths o char codes.
 
 **Paso 2 — detalles implementados (11-ago-2026):**
 - `POS.Application/Receipts/EscPosEncoder.cs` — función pura `Encode(string, EscPosOptions?) → byte[]`.
@@ -341,17 +353,28 @@ agregaría [Imprimir] [PDF] [Nueva venta].
   best-fit em-dash/'?', ESC t 0 en CP437, corte completo, feed cero, integración con el builder.
   **40/40 verdes.**
 
-**Paso 1 — detalles implementados (11-ago-2026):**
-- `POS.Application/Receipts/ReceiptContentBuilder.cs` — función pura `Build(SaleDto)`.
-  Formato conservado del console (42 chars) con mejoras: descuento por línea
-  (`Desc.: -X.XX` solo si > 0), descuento global en negativo, nombres de pago en
-  español (Efectivo/Tarjeta/Transferencia), cantidades fraccionarias limpias
-  (2 → "2", 0.5 → "0.5"), montos alineados a columna fija (campo 10).
-- `ConsoleReceiptPrinter` delega en el builder (un solo cerebro de layout).
-- Tests: `ReceiptContentBuilderTests` — golden completo + descuentos + métodos de
-  pago + fraccionario + ancho 42. **26/26 tests verdes.**
-- Gotcha: al escribir golden tests con alineación, NO contar espacios a ojo —
-  "50.00"/"36.00" tienen 5 chars (no 6); verificar con lengths o char codes.
+**Paso 4 — detalles implementados (11-ago-2026):**
+- `POS.Infrastructure/Services/ReceiptPdfGenerator.cs` — QuestPDF 2026.7.2 (licencia Community,
+  gratis < 1M USD ingresos; se setea en static ctor). `Generate(SaleDto) → byte[]` +
+  `GenerateToFile(SaleDto, path)`. Mismo contenido: delega en `ReceiptContentBuilder`
+  (cerebro único de layout). Render: página Carta, margen 40, caja con borde gris claro
+  (radius/borde del design system), fuente Courier New 11 monospace (la alineación de
+  columnas del recibo de 42 chars depende de la fuente monoespaciada), líneas centradas
+  detectadas con la misma técnica del encoder (`Center(trim()) == line`) y alineadas
+  al centro; en blanco → separador de 6pt.
+- **API QuestPDF 2026.x (gotchas):** (1) los métodos del descriptor de texto NO encadenan
+  (void): `text.AlignCenter(); text.Span(...)` secuencial, no `.AlignCenter().Span(...)`;
+  (2) `Settings` ya no tiene `CompressDocument` (se eliminó; los streams van FlateDecode
+  siempre → el texto NO es buscable en bytes crudos); (3) `GenerateImages()` devuelve
+  `IEnumerable<byte[]>` (PNG por página), no System.Drawing.Image; (4) propiedades reales
+  de Settings: License, DocumentLayoutExceptionThreshold, EnableCaching, EnableDebugging,
+  CheckIfAllTextGlyphsAreAvailable, UseEnvironmentFonts, FontDiscoveryPaths,
+  TemporaryStoragePath (verificado por reflexión con un probe net9.0 — PowerShell 5.1 no
+  puede cargar DLLs net8+).
+- Tests `ReceiptPdfGeneratorTests` (2): estructura %PDF + %%EOF + `/Count 1` (una página),
+  y GenerateToFile crea archivo válido. El contenido NO se verifica en bytes (comprimido):
+  se verificó visualmente renderizando la página con `GenerateImages()` → PNG y revisándola
+  (caja, centrado, columnas alineadas, monospace). **42/42 verdes.**
 
 ---
 
