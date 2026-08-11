@@ -52,12 +52,15 @@ public static class ReceiptContentBuilder
         return sb.ToString();
     }
 
-    /// <summary>Centra un texto en el ancho del recibo (resto repartido a ambos lados).</summary>
-    private static string Center(string text)
+    /// <summary>
+    /// Centra un texto en el ancho del recibo (resto repartido a ambos lados).
+    /// Público: el encoder ESC/POS lo reutiliza para detectar líneas centradas.
+    /// </summary>
+    public static string Center(string text, int width = Width)
     {
-        if (text.Length >= Width) return text;
-        var pad = (Width - text.Length) / 2;
-        return new string(' ', pad) + text + new string(' ', Width - text.Length - pad);
+        if (text.Length >= width) return text;
+        var pad = (width - text.Length) / 2;
+        return new string(' ', pad) + text + new string(' ', width - text.Length - pad);
     }
 
     /// <summary>Cantidad limpia: enteros sin decimales, fracciones hasta 3 dígitos.</summary>

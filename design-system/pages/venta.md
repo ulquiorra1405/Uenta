@@ -316,11 +316,30 @@ agregaría [Imprimir] [PDF] [Nueva venta].
 | # | Paso | Estado |
 |---|------|--------|
 | 1 | **Motor de contenido** `ReceiptContentBuilder` (Application, puro): SaleDto → texto 42 chars. Compartido por consola/ESC/POS/PDF | ✅ HECHO (11-ago, commit) |
-| 2 | **Encoder ESC/POS** (puro): texto → bytes (init, centrado, negrita, corte, CP437/850 para ñ/acentos) | ⏳ |
+| 2 | **Encoder ESC/POS** (puro): texto → bytes (init, centrado, negrita, corte, CP437/850 para ñ/acentos) | ✅ HECHO (11-ago, commit) |
 | 3 | **Envío a impresora** P/Invoke winspool.drv (raw por nombre de impresora, error claro si no existe) | ⏳ |
 | 4 | **PDF** (QuestPDF): mismo contenido, archivo guardable/imprimible | ⏳ |
 | 5 | **Conectar al cobro**: ConfirmPaymentAsync imprime + modal [Imprimir] [PDF] [Nueva venta] | ⏳ |
 | 6 | **Ajustes**: selector de impresora + auto-imprimir (con pantalla de Ajustes de Fase 1) | ⏳ |
+
+**Paso 2 — detalles implementados (11-ago-2026):**
+- `POS.Application/Receipts/EscPosEncoder.cs` — función pura `Encode(string, EscPosOptions?) → byte[]`.
+  Secuencia: `ESC @` init + `ESC t n` (2=CP850 por defecto, 0=CP437) + `ESC 2` interlineado;
+  por línea `ESC a n` (0 izq / 1 centro, solo al cambiar) + texto; línea TOTAL en negrita
+  (`ESC E 1`/`ESC E 0`); fin: `ESC d n` avance (3 por defecto) + `GS V m` corte (65 parcial /
+  66 completo). Ignora el elemento vacío final del '\n' del builder.
+- **Detección de centrado sin heurísticas**: una línea está centrada si re-centrar su texto
+  recortado (`ReceiptContentBuilder.Center`, ahora público) reproduce la línea exacta — misma
+  fuente de verdad que el builder.
+- **CP437/CP850 sin dependencias**: tablas altas (0x80-0xFF) generadas con .NET CodePages
+  (autoritativo) embebidas como constantes + best-fit para comunes fuera de tabla
+  (— → '-', comillas tipográficas, Á/Í/Ó/Ú → base en CP437, resto → '?').
+  Dato curioso verificado: ni CP437 ni CP850 tienen em-dash real — el título
+  "UENTA — RECIBO DE VENTA" imprime "UENTA - RECIBO DE VENTA" (0x2D).
+- Tests `EscPosEncoderTests` (14): golden byte-exacto, centrado sin relleno, espacios internos
+  de montos preservados, línea vacía sin re-emitir ESC a, negrita solo en TOTAL, CP850 español,
+  best-fit em-dash/'?', ESC t 0 en CP437, corte completo, feed cero, integración con el builder.
+  **40/40 verdes.**
 
 **Paso 1 — detalles implementados (11-ago-2026):**
 - `POS.Application/Receipts/ReceiptContentBuilder.cs` — función pura `Build(SaleDto)`.
