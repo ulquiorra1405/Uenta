@@ -63,7 +63,11 @@
             <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Padding" Value="16,10" />
-            <Setter Property="BorderThickness" Value="0" />
+            <!-- Borde SIEMPRE 2px (transparente en reposo): cambiar BorderThickness al enfocar
+                 hace que el botón crezca al hacer clic (gana foco de teclado). Solo se
+                 cambia el color del borde. -->
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2" />
             <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -88,10 +92,9 @@
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
                             </Trigger>
-                            <!-- Focus visible (accesibilidad) -->
+                            <!-- Focus visible (accesibilidad): solo color, nunca grosor -->
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -103,6 +106,8 @@
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -110,7 +115,7 @@
                                 Background="{TemplateBinding Background}"
                                 CornerRadius="6"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="0"
+                                BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
@@ -126,7 +131,6 @@
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -166,7 +170,6 @@
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -229,7 +232,6 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -253,6 +255,8 @@
             <Setter Property="Padding" Value="8,2" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="MinWidth" Value="28" />
+            <!-- Borde 1px constante transparente: el foco solo cambia el color (sin crecer) -->
+            <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -260,7 +264,7 @@
                                 Background="{TemplateBinding Background}"
                                 CornerRadius="6"
                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="0"
+                                BorderThickness="1"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
@@ -276,7 +280,6 @@
                             </Trigger>
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="1" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
