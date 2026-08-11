@@ -476,20 +476,16 @@ Fix de 4 bugs reportados por Bryan (11-ago, verificado con UIA + capturas):
 2. **Descuento global no bajaba al quitar líneas**: al quitar un item, GlobalDiscount quedaba
    igual → subtotal 50 con descuento 80 → total 0 oculto (negativo enmascarado) y el recibo
    inconsistente (SaleService lo rechazaba con DISCOUNT_EXCEEDS_TOTAL).
-   - **Parche inicial (15:05):** clamp en `RecalculateTotals` — `if (GlobalDiscount > Subtotal)
-     GlobalDiscount = Subtotal;` con guarda anti-recursión `_isRecalculating`.
-   - **Fix real (15:30, commit 0b48888):** Bryan reportó que el bug persistía — el clamp solo
-     evitaba el negativo visible, no la disputa de fondo. Causa raíz: `Subtotal` ya incorpora
-     los descuentos de línea (`Subtotal = Σ(UnitPrice×Qty − LineDiscount)`), así que al quitar
-     una línea descontada el subtotal cae mucho y el monto global fijo quedaba clavado.
-     Solución: capturar el **% efectivo** que el monto representa del subtotal al escribirlo
-     (`_globalDiscountPct = clamp(value/Subtotal, 0, 1)`) y, cuando el ticket SE ENCOGE
-     (`newSubtotal < Subtotal`), escalar el monto a `newSubtotal × pct` (solo a la baja).
-     Nunca sube solo al agregar líneas — el control del monto lo tiene quien cobra. Ticket
-     vacío → descuento 0. Red de seguridad final: `GlobalDiscount > Subtotal → = Subtotal`.
-     Verificado UIA: global 30 sobre 105 (28.57%) → 50% línea en Jugo (80→40) → subtotal 65
-     → global escala a 18.57; quitar la línea descontada → subtotal 25 → global 7.14. El %
-     efectivo se conserva en cada paso.
+   - **Parche 1 (15:05):** clamp `GlobalDiscount > Subtotal → = Subtotal` — solo evitaba el
+     negativo visible.
+   - **Parche 2 (15:30, commit 0b48888):** re-escalado por % efectivo (`pct = monto/subtotal`
+     al escribir, baja proporcional al encogerse) — resolvió el bug pero el campo se movía
+     solo → Bryan lo percibió como errático.
+   - **Fix FINAL (16:05, commit 79c2fd6, diseño aprobado en modo plan):** el descuento global
+     es **monto fijo RD$ que NUNCA se muta solo**. Si supera el subtotal → aviso rojo con
+     icono + COBRAR bloqueado (CanStartPayment/CanChooseMethod) hasta ajustar el monto.
+     Negativos bloqueados (un -5 inflaba el total como 'recargo'). Validación honesta en vez
+     de auto-ajuste silencioso.
 3. **Dropdown afectaba el indicador de ticket vacío**: con carrito vacío, abrir el dropdown
    (fila en flujo) re-centraba el placeholder y lo hacía saltar. Fix: el placeholder ahora se
    muestra solo con `CartLines.Count == 0` Y `IsSuggestionsOpen == False` (MultiDataTrigger).
@@ -507,3 +503,50 @@ Fix de 4 bugs reportados por Bryan (11-ago, verificado con UIA + capturas):
   vacío"; Enter → item → 5 botones enabled; "zzz" → 5 botones disabled; 50% → badge
   "-RD$ 40.00" visible; GlobalDiscount 999 → clamp 40; quitar línea → 0.00. Build 0/0,
   42/42 tests.
+
+## Descuentos rediseñados — toggle %/RD$ en línea + global fijo (11-ago, commit 79c2fd6)
+
+Diseño cerrado en modo plan con Bryan (la disputa global vs individual salió de los bugs
+reportados). Principio rector: **ningún campo se mueve solo**.
+
+### Línea (individual)
+- **Toggle % / RD$** (chips estilo PaymentButton con DataTrigger sobre `DiscountMode`,
+  accesibles por teclado): el cajero ve ambas opciones al abrir el panel — no hay modo oculto.
+- **% persistente y dinámico**: `LineDiscount = min(LineGross × DiscountPercent / 100, LineGross)`.
+  El descuento sigue a la cantidad (10 items → 500, 5 → 250). Antes el % se descartaba al
+  aplicar y el monto quedaba clavado (bug 1 de Bryan).
+- **RD$ fijo**: promesa literal con tope suave en el total de la línea.
+- **Preview en vivo** (`DiscountPreviewText`): mientras escribe muestra "-RD$ 4.00" antes de
+  aplicar — se acabó el "¿esto qué va a descontar?".
+- **Reabrir el panel precarga** modo + valor aplicados (`OnIsDiscountOpenChanged` →
+  `DiscountInputText` con el valor real). Nada oculto al editar.
+- **Badge**: "-RD$ 250.00 (5%)" en %, "-RD$ 30.00" en fijo (`DiscountBadgeText`; visible con
+  `HasDiscount`).
+
+### Global
+- **Monto fijo RD$ que NUNCA se muta solo** (eliminado el re-escalado por % del commit
+  0b48888). Etiqueta "Descuento global (RD$)" + tooltip "Monto fijo".
+- **Si supera el subtotal**: aviso rojo con WarningIcon ("El descuento supera el subtotal —
+  ajusta el monto") + COBRAR y chips bloqueados (`GlobalDiscountExceedsSubtotal` en
+  `CanStartPayment`/`CanChooseMethod`) hasta ajustar.
+- **Negativos bloqueados** en `OnGlobalDiscountChanged` (un -5 inflaba el total como
+  "recargo" accidental).
+- `GlobalDiscountExceedsSubtotal = GlobalDiscount > Subtotal` se calcula en `RecalculateTotals`
+  (los 3 comandos se refrescan ahí).
+
+### Orden de aplicación (estable y documentado)
+`línea → subtotal neto (Σ LineTotal) → global → total`. Los descuentos de línea ya van dentro
+ del subtotal; el global se aplica sobre ese neto. Ningún orden de operaciones cambia el
+ resultado y ningún campo editado cambia solo.
+
+### Verificación (UIA end-to-end)
+- Toggle % / RD$ visible al abrir el panel.
+- % : escribir 5 → preview "-RD$ 4.00" → Aplicar → badge "-RD$ 4.00 (5%)"; qty 1→2 → badge
+  dinámico "-RD$ 8.00 (5%)".
+- Reabrir → input precargado "5" en modo %.
+- RD$ : fijo 30 → badge "-RD$ 30.00"; qty 3 → sigue "-RD$ 30.00" (promesa literal).
+- Global 300 > subtotal 235 → aviso visible + COBRAR disabled; corregir a 5 → aviso fuera +
+  COBRAR enabled; escribir -5 → queda 0; quitar líneas con global 10 → aviso y el campo NO
+  se mueve.
+- Build 0/0, 42/42 tests. Modelo: `LineDiscountMode { Percent, Amount }` + `DiscountPercent`/
+  `FixedDiscount`/`DiscountInputText` en `CartLineViewModel`.
