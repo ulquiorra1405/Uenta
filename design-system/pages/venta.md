@@ -558,3 +558,22 @@ reportados). Principio rector: **ningÃºn campo se mueve solo**.
   se mueve.
 - Build 0/0, 42/42 tests. Modelo: `LineDiscountMode { Percent, Amount }` + `DiscountPercent`/
   `FixedDiscount`/`DiscountInputText` en `CartLineViewModel`.
+
+## Botones sin cambio de tamaño al presionar (11-ago, commit f7ef44f)
+
+Bryan reportó que los botones de línea (+ - ?) cambiaban de tamaño al presionarlos — bug
+visual molesto. **Causa raíz:** todos los estilos de botón cambiaban BorderThickness en el
+trigger IsKeyboardFocused (0?2, 0?2, 1?2, 0?1) y al hacer clic WPF otorga foco de teclado al
+botón ? el borde aparecía y el control crecía 2px. Afectaba a TODOS los botones (COBRAR,
+chips, categorías) y también a los TextBox (borde 1?2 al enfocarse: línea de entrada,
+descuento global).
+
+**Fix — patrón de borde reservado:** BorderThickness constante por estilo (2px botones
+sólidos/ghost; 1px payment/icon/inputs) con BorderBrush=Transparent en reposo; los triggers
+de foco solo cambian el COLOR del borde, nunca el grosor. Cero cambio de layout en cualquier
+estado; el foco sigue visible por color. Verificado UIA con bounding rects antes/después de
+invocar con foco: + 36×21?36×21, descuento 36×21?36×21, chip % 56×48?56×48,
+DescuentoGlobal 137×38?137×38, LineaEntrada 756×81?756×81. Build 0/0.
+
+**Regla para estilos nuevos:** nunca cambiar BorderThickness en triggers — reservar el espacio
+y cambiar solo el Brush.
