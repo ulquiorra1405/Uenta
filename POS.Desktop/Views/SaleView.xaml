@@ -468,7 +468,7 @@
                         <Grid>
                             <TextBox x:Name="SearchBox"
                                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="38,11,12,11" FontSize="14"
+                                     Padding="48,11,12,11" FontSize="14"
                                      AutomationProperties.Name="LineaEntrada"
                                      PreviewKeyDown="SearchBox_PreviewKeyDown"
                                      PreviewMouseLeftButtonDown="SearchBox_PreviewMouseLeftButtonDown"
@@ -496,11 +496,12 @@
                                 </Path.Style>
                             </Path>
                             <!-- Hint: fantasma EXACTO del texto tipeado (mismo FontSize y mismo
-                                 offset: 38 padding + 1 borde del TextBox = 39). SOLO se muestra
-                                 si la caja está vacía Y SIN foco: al enfocar (clic/escáner/Enter)
-                                 desaparece — el caret nunca queda 'dentro' del hint. Chip 'Enter'
-                                 estilo GitHub/Linear (propuesta estética 19:22, aprobada). -->
-                            <StackPanel Orientation="Horizontal" Margin="39,0,0,0"
+                                 offset: 48 padding + 1 borde del TextBox = 49 — ambos se movieron
+                                 juntos para dar aire a la lupa; el hint SIEMPRE queda donde
+                                 escribiría el usuario). SOLO se muestra si la caja está vacía Y SIN
+                                 foco: al enfocar (clic/escáner/Enter) desaparece — el caret nunca
+                                 queda 'dentro' del hint. Chip 'Enter' estilo GitHub/Linear. -->
+                            <StackPanel Orientation="Horizontal" Margin="49,0,0,0"
                                         VerticalAlignment="Center" IsHitTestVisible="False">
                                 <StackPanel.Style>
                                     <Style TargetType="StackPanel">
