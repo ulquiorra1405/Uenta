@@ -53,6 +53,34 @@ public partial class SaleView : UserControl
     private void FocusCatalogSearch() => CatalogSearchBox.Focus();
 
     /// <summary>
+    /// Clic en cualquier parte de la línea de entrada VACÍA: el caret SIEMPRE al inicio
+    /// (posición 0), nunca en medio del hint superpuesto. Sin esto, WPF coloca el caret
+    /// según el punto del clic y, con el hint visible ("Escribe código…"), parece que
+    /// el cursor queda "dentro" del hint. e.Handled=true impide el posicionamiento
+    /// por clic del TextBox (se ejecuta después del preview).
+    /// </summary>
+    private void SearchBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (SearchBox.Text.Length == 0)
+        {
+            SearchBox.Focus();
+            SearchBox.CaretIndex = 0;
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Misma regla para el buscador del catálogo (campo sin hint, pero consistente).</summary>
+    private void CatalogSearchBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (CatalogSearchBox.Text.Length == 0)
+        {
+            CatalogSearchBox.Focus();
+            CatalogSearchBox.CaretIndex = 0;
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
     /// Enter en la línea de entrada: el TextBox marca la tecla como manejada
     /// (AcceptsReturn=false) y el KeyBinding nunca se evalúa; el PreviewKeyDown
     /// la intercepta antes y delega en el comando del ViewModel.

@@ -388,6 +388,15 @@
                                                 <ContentPresenter />
                                             </Border>
                                             <ControlTemplate.Triggers>
+                                                <!-- Resaltado UNIFICADO: el mouse y la selección por
+                                                     teclado (↑/↓) pintan el MISMO gris (MutedBrush).
+                                                     Antes el hover del mouse venía del estilo Button
+                                                     global (verde PrimaryDarkBrush) → dos estilos
+                                                     distintos peleando. SuggestionButton ya no pinta
+                                                     nada; aquí vive el único resaltado. -->
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource MutedBrush}" />
+                                                </Trigger>
                                                 <Trigger Property="IsSelected" Value="True">
                                                     <Setter TargetName="Bd" Property="Background" Value="{StaticResource MutedBrush}" />
                                                 </Trigger>
@@ -458,6 +467,7 @@
                                      Padding="38,11,12,11" FontSize="14"
                                      AutomationProperties.Name="LineaEntrada"
                                      PreviewKeyDown="SearchBox_PreviewKeyDown"
+                                     PreviewMouseLeftButtonDown="SearchBox_PreviewMouseLeftButtonDown"
                                      ToolTip="Escanee un código de barras o escriba SKU/nombre (Enter agrega)">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Down" Command="{Binding SelectNextSuggestionCommand}" />
@@ -669,6 +679,7 @@
                                  Padding="38,10,12,10" FontSize="14"
                                  AutomationProperties.Name="BuscarCatalogo"
                                  PreviewKeyDown="CatalogSearchBox_PreviewKeyDown"
+                                 PreviewMouseLeftButtonDown="CatalogSearchBox_PreviewMouseLeftButtonDown"
                                  ToolTip="Escanee un código de barras o escriba SKU/nombre">
                         </TextBox>
                         <Path Data="{StaticResource SearchIcon}" Stroke="{StaticResource TextSecondaryBrush}"
