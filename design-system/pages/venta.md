@@ -595,3 +595,23 @@ geometría del texto que reemplaza.
 Nuevo estilo SuggestionButton sin triggers de hover/pressed/foco; el único resaltado es el
 del teclado (ListBoxItem IsSelected ? MutedBrush). Regla: elementos que ya tienen un
 "selected" propio (ListBox) no deben tener hover adicional en su contenido clickeable.
+
+## Caret al inicio en caja vacía + hover unificado en sugerencias (11-ago, commit bd11f77)
+
+Bryan (18:46) aclaró los dos ajustes (no eran lo que parecían):
+
+**1. Caret, no alineación.** "Cuando pongo el cursor sobre el textbox el cursor queda en
+'Escrib|e código o nombre...'". Al hacer clic en la caja vacía, WPF coloca el caret en el
+punto del clic — DENTRO del hint superpuesto (TextBlock fantasma), como si fuera texto real.
+Fix: PreviewMouseLeftButtonDown en SearchBox/CatalogSearchBox ? si el campo está vacío,
+Focus() + CaretIndex = 0 + e.Handled = true (bloquea el posicionamiento por clic del
+TextBox). Verificado: clic en medio del hint + escribir ? el texto aparece al INICIO.
+Regla: **cualquier campo con hint superpuesto debe forzar caret 0 al hacer clic en vacío.**
+
+**2. Hover unificado, no eliminado.** "Quiero que tanto el mouse como el teclado tengan el
+mismo hover". Antes: teclado = IsSelected ? MutedBrush (gris sutil); mouse = estilo Button
+global ? PrimaryDarkBrush (verde fuerte). Dos estilos peleando. Fix: trigger IsMouseOver
+en el ListBoxItem pinta el MISMO MutedBrush que IsSelected; el SuggestionButton (4d330b8)
+queda neutro. Verificado: mouse y teclado ? mismo gris #F1F5F9.
+Regla: **en un ListBox con selección por teclado, hover de mouse y selección deben pintar
+el mismo brush.**
