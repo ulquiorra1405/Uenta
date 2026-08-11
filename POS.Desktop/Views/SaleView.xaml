@@ -479,9 +479,10 @@
                                   StrokeThickness="2" Width="16" Height="16" Stretch="Uniform"
                                   HorizontalAlignment="Left" Margin="13,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" />
                             <!-- Hint: fantasma EXACTO del texto tipeado (mismo FontSize y mismo
-                                 offset: 38 padding + 1 borde del TextBox = 39). Antes era 11.5px
-                                 y Margin 38: el borde izquierdo coincidía pero el peso visual
-                                 distinto hacía ver el texto con 'sangría' vs el hint. -->
+                                 offset: 38 padding + 1 borde del TextBox = 39). SOLO se muestra
+                                 si la caja está vacía Y SIN foco: al enfocar (clic/escáner/Enter)
+                                 desaparece — el caret nunca queda 'dentro' del hint (fix del caret
+                                 de bd11f77 + este = solución completa; propuesta de Bryan 19:16). -->
                             <TextBlock Text="Escribe código o nombre…  (Enter agrega)" FontSize="14"
                                        Foreground="{StaticResource TextSecondaryBrush}" Margin="39,0,0,0"
                                        VerticalAlignment="Center" IsHitTestVisible="False">
@@ -489,9 +490,13 @@
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding SearchText}" Value="" />
+                                                    <Condition Binding="{Binding IsKeyboardFocused, ElementName=SearchBox}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility" Value="Visible" />
-                                            </DataTrigger>
+                                            </MultiDataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
