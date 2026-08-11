@@ -645,3 +645,15 @@ Bryan (19:22) pidió modernizar; propuse 3 mejoras, aprobadas (19:25):
 Reglas nuevas: (a) las teclas en hints se muestran como keycaps, no texto; (b) iconos que
 cambian de color con el foco: el color debe vivir en el Style (Setter), no en el elemento;
 (c) mensajes de validación fuera del campo de entrada, en fila de altura reservada.
+
+## Aire lupa vs texto/hint (11-ago, commit bb88c95)
+
+Bryan (19:32): "separar el hint de la lupa tal cual esta el texto editable". El hint YA
+estaba alineado con el texto (misma X), pero el gap con la lupa era de 10px y, ambos grises,
+se percibían pegados. Fix: mover los DOS juntos a la derecha — padding izq. del SearchBox
+38?48, hint margin 39?49 (48+1). Regla del fantasma exacto intacta: hint y texto editable
+comparten la misma X (49); el respiro con la lupa pasa a 20px.
+
+Lección de medición: un código EXACTO en la línea de entrada se auto-agrega al ticket y
+limpia el campo (loop de escáner) — para comparar visualmente texto editable vs hint hay
+que usar un término NO exacto (p.ej. "PAN", no "PAN-001").
