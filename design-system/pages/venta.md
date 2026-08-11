@@ -487,8 +487,16 @@ Fix de 4 bugs reportados por Bryan (11-ago, verificado con UIA + capturas):
      Negativos bloqueados (un -5 inflaba el total como 'recargo'). Validación honesta en vez
      de auto-ajuste silencioso.
 3. **Dropdown afectaba el indicador de ticket vacío**: con carrito vacío, abrir el dropdown
-   (fila en flujo) re-centraba el placeholder y lo hacía saltar. Fix: el placeholder ahora se
-   muestra solo con `CartLines.Count == 0` Y `IsSuggestionsOpen == False` (MultiDataTrigger).
+   (fila en flujo) re-centraba el placeholder y lo hacía saltar. Fix inicial: el placeholder se
+   mostraba solo con `CartLines.Count == 0` Y `IsSuggestionsOpen == False` (MultiDataTrigger).
+   **Revisado 16:15 (commit b07224a):** Bryan señaló que ocultarlo desconcentra — "no es algo
+   que uno espera que suceda". Fix final: el dropdown dejó de vivir en flujo (fila Auto que
+   encogía el área del ticket y re-centraba el placeholder) y ahora es **superposición fija**
+   (misma celda, anclado abajo, `Panel.ZIndex=10`) — no empuja el layout, el estado vacío
+   queda visible y estático siempre. El placeholder depende solo de `CartLines.Count == 0`.
+   Con items, el dropdown cubre temporalmente las líneas inferiores mientras se escribe
+   (patrón autocomplete estándar). Verificado: placeholder en posición idéntica con y sin
+   dropdown (capturas); UIA 4 estados OK.
 4. **Solo EFECTIVO/COBRAR se deshabilitaban con línea pendiente**: TARJETA/TRANSFERENCIA/MIXTO
    usaban SetMethodCommand/OpenMixedCommand sin CanExecute → abrían el modal de cobro con la
    línea sin resolver (bypass de la regla 3.2). Fix: `CanStartPayment` (COBRAR/EFECTIVO/F8:
