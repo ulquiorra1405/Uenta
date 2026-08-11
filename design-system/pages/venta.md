@@ -8,52 +8,54 @@
 
 ## 0. Qué es esta pantalla
 
-Núcleo operativo del sistema: el cajero agrega productos (escáner o búsqueda),
-ve el carrito con totales, aplica descuentos y cobra. Velocidad y cero fricción
-son el objetivo: cada venta debe tomar segundos, no minutos.
+Núcleo operativo del sistema: el cajero arma el ticket (escáner, escritura
+directa de código/nombre o catálogo visual), ve los totales y cobra.
+Velocidad y cero fricción: cada venta debe tomar segundos, no minutos.
+
+**Modelo (aprobado por Bryan 10-ago-2026): TICKET-CENTERED (modelo B).**
+El catálogo ya NO está siempre visible. La pantalla es de pago completo:
+el ticket ocupa el protagonismo y el catálogo se consulta **a demanda**:
+1. **Escáner / código directo** — escribe el código y se rellena solo.
+2. **Búsqueda por nombre** — dropdown de sugerencias mientras escribes.
+3. **Catálogo visual (popup)** — búsqueda guiada con el grid de siempre.
+
+Los 3 modos conviven; la cajera elige el que le ahorre tiempo (tras 50 ventas
+del mismo producto, el código directo es lo más rápido).
 
 **No aplican del MASTER:** el patrón de landing page, el motion GSAP (scroll
 reveal) y los breakpoints responsive web. Esta es una app desktop de alta
-densidad con ventana única maximizada. Se conservan: layout, flujos, atajos.
+densidad con ventana única maximizada.
 **Línea estética (10-ago-2026):** Minimalismo Funcional (Swiss) — ver
-`estetica-minimalista.md` y `uenta-pos/MASTER.md`. Cambió la paleta de neutros,
-se eliminaron las sombras decorativas y el sidebar ahora usa barra indicadora.
+`estetica-minimalista.md` y `uenta-pos/MASTER.md`.
 
 ---
 
 ## 1. Layout (wireframe)
 
-Ventana única, mínimo 1280×800, maximizada por defecto. Tres franjas
-verticales: header (48px), cuerpo (flex), sin footer global.
+Ventana única, mínimo 1280×800, maximizada por defecto. Header (48px) + cuerpo
+con dos zonas: **ticket** (izquierda, ~60%) y **totales/cobro** (derecha, ~40%).
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ ● Uenta POS        Caja #12 · abierta        Cajero: Juan       12:45  ☰  │
 ├───────────────────────────────────────────────┬──────────────────────────────┤
-│  BUSCAR O ESCANEAR  [____________________] ⌕  │  VENTA #1024    Cliente:    │
-│  Enter=agregar · F2=búsqueda                   │  [Anónimo ▾]  [+ Cliente]   │
+│  VENTA #1024     Cliente: [Anónimo ▾]  [3]   │  SUBTOTAL         50,500.00  │
+│                                               │  ITBIS 18%         7,703.39  │
+│  ┌─────────────────────────────────────────┐ │  DESCUENTO           -0.00  │
+│  │ Café 12oz                  x2    180.00 │ │  ────────────────────────    │
+│  │   [−] [+] [✕]                          │ │  TOTAL        RD$ 58,203.39  │
+│  ├─────────────────────────────────────────┤ │                              │
+│  │ Empanada de pollo            x1     40.00│ │  [% Descuento] [👤 Cliente] │
+│  │   [−] [+] [✕]                          │ │  ────────────────────────    │
+│  ├─────────────────────────────────────────┤ │  [EFECTIVO] [TARJETA]       │
+│  │ Refresco 12oz                x1     35.00│ │  [TRANSFERENCIA] [MIXTO]    │
+│  │   [−] [+] [✕]                          │ │  ────────────────────────    │
+│  ├─────────────────────────────────────────┤ │  [      COBRAR  F8      ]   │
+│  │ ▸ [Escribe código o nombre…        ]    │ │                              │
+│  │   (dropdown de sugerencias ↓)          │ │                              │
+│  └─────────────────────────────────────────┘ │                              │
 │                                               │                              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐       │  ┌────────────────────────┐ │
-│  │ iPhone15 │ │ Teclado  │ │ Mouse    │       │  │ 1× iPhone 15           │ │
-│  │ RD$45,000│ │ RD$2,500 │ │ RD$1,200 │       │  │    45,000    [−][+][%]✕│ │
-│  │   [+Agr] │ │   [+Agr] │ │   [+Agr] │       │  ├────────────────────────┤ │
-│  └──────────┘ └──────────┘ └──────────┘       │  │ 2× Teclado GX          │ │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐       │  │    5,000     [−][+][%]✕│ │
-│  │ Monitor  │ │ Cable    │ │ Audífono │       │  └────────────────────────┘ │
-│  │ RD$8,500 │ │ RD$400   │ │ RD$1,800 │       │  ...                       │
-│  └──────────┘ └──────────┘ └──────────┘       │                             │
-│                                               │  Subtotal         50,500.00 │
-│  [TODOS] [Celulares] [Cómputo] [Audio]        │  ITBIS 18%         7,703.39 │
-│  [Accesorios] [Electro] [+ categorías ▸]      │  Descuento            -0.00 │
-│                                               │  ────────────────────────   │
-│  Resultados: 24 · [Búsqueda avanzada]         │  TOTAL         RD$ 58,203.39│
-│                                               │                             │
-│                                               │  [% Descuento] [👤 Cliente] │
-│                                               │  ────────────────────────   │
-│                                               │  [EFECTIVO] [TARJETA]      │
-│                                               │  [TRANSFERENCIA] [MIXTO]   │
-│                                               │  ────────────────────────   │
-│                                               │  [      COBRAR  F8      ]  │
+│  [+ Agregar item]        [Catálogo  F2]      │                              │
 └───────────────────────────────────────────────┴──────────────────────────────┘
 ```
 
@@ -62,14 +64,15 @@ verticales: header (48px), cuerpo (flex), sin footer global.
 | Zona | Ancho | Contenido |
 |------|-------|-----------|
 | Header | 100% (48px) | Marca, estado de caja, usuario, reloj, menú |
-| Izquierda (catálogo) | ~58% | Buscador + grid de productos (cards) + categorías |
-| Derecha (venta) | ~42% | Carrito, totales, métodos de pago, COBRAR |
+| Izquierda (ticket) | ~60% | Líneas del ticket + línea de entrada + acciones |
+| Derecha (cobro) | ~40% | Totales, métodos de pago, COBRAR |
 
 ### Jerarquía visual
 
-1. **TOTAL** (derecha, tamaño display, peso bold) — lo que el cliente debe pagar.
-2. **COBRAR** — botón primario más grande de la pantalla, color accent, F8.
-3. **Buscador** (izquierda, arriba) — siempre enfocado al entrar la pantalla.
+1. **TOTAL** (derecha, tamaño display, bold) — lo que el cliente debe pagar.
+2. **COBRAR** — botón más grande de la pantalla, color accent, F8.
+3. **Línea de entrada activa** (la línea vacía del ticket) — siempre enfocada
+   cuando el cajero agrega; es el corazón del modelo B.
 4. Métodos de pago — visibles siempre (sin menús ocultos).
 
 ---
@@ -94,121 +97,157 @@ verticales: header (48px), cuerpo (flex), sin footer global.
 | `WarningBrush` | `#D97706` | Avisos de stock (no bloqueante) |
 
 Regla dura: **nada de hex hardcodeado en las vistas** — todo por `DynamicResource`
-desde App.xaml (tema claro/oscuro futuro sin tocar XAML de pantallas).
+desde App.xaml.
 
 ### Tipografía
 
-- **Números/montos:** `Rubik` (o fallback `Segoe UI Variable Display` si Rubik
-  no está instalada — NO bloquear la app por una fuente). Tabs numéricas.
+- **Números/montos:** `Rubik` (fallback `Segoe UI Variable Display`). Tabs numéricas.
 - **Texto general:** `Nunito Sans` (fallback `Segoe UI Variable`).
 - Escala (px): 11 UI secundaria · 13 cuerpo · 15 énfasis · 18 subtítulo ·
   24 título de sección · **32 total** · 20 botón COBRAR.
-- Montos SIEMPRE `N2` con miles (RD$ 58,203.39), monospaced/tabular para que
-  no bailen al cambiar.
+- Montos SIEMPRE `N2` con miles (RD$ 58,203.39), tabular para que no bailen.
 
-### Espaciado (densidad 6/10 — aire sin perder densidad de cajero)
+### Espaciado (densidad 6/10)
 
-`4 / 8 / 12 / 16 / 24 / 32` px. Padding estándar de cards: 12px. Gaps de
-grid de productos: 10px. Margen interno del carrito: 16px.
+`4 / 8 / 12 / 16 / 24 / 32` px. Padding estándar: 12px. Margen interno del
+ticket: 16px. Fila de ticket: 48px mín. (target táctil).
 
 ### Sombras (mínimas — Minimalismo Funcional)
 
-- Superficies de contenido (cards, carrito, botones): **SIN sombra** —
-  jerarquía por hairlines `BorderBrush` y tipografía.
-- **Única excepción: modales** (sombra suave + scrim `#99000000`).
+- Superficies de contenido (líneas, panel de totales, botones): **SIN sombra**.
+- **Única excepción: modales/popups** (dropdown de sugerencias y catálogo:
+  sombra suave + hairline; modales: sombra + scrim `#99000000`).
 
 ### Radio de esquinas
 
-- Botones, inputs y cards: **6px**. Modales: 12px. Chips de categoría: 999px (píldora).
+- Botones, inputs, líneas y cards: **6px**. Modales: 12px. Chips: 999px (píldora).
 
 ---
 
 ## 3. Componentes
 
-### 3.1 Buscador (izquierda, arriba)
-- Input grande (48px), placeholder "Buscar o escanear…", icono lupa a la izquierda.
-- **Enter agrega el producto al carrito** (código de barras = emulación de
-  teclado; el foco NUNCA se pierde del input).
-- Coincidencia por: código de barras exacto → SKU → nombre (LIKE). Si el
-  escaneado no existe: aviso inline "Producto no encontrado" + sugerencias.
-- Debounce 250ms para búsqueda por nombre; resultados en el grid.
+### 3.1 Línea del ticket (item ya agregado)
 
-### 3.2 Grid de productos
-- Cards compactas (icono/color de categoría, nombre 2 líneas máx., precio,
-  botón [+ AGREGAR]).
-- Click en card o Enter = agregar 1 unidad. Click en [+ AGREGAR] también.
-- **Stock bajo (< mínimo):** badge ámbar "Quedan N". **Stock 0 o negativo:**
-  badge ámbar "Sin stock — avisar" (P3: se vende igual, avisa, no bloquea).
-- Producto inactivo: nunca aparece en grid ni en búsqueda.
+- Fila de 48px mín.: `nombre (2 líneas máx.) · cantidad · precio de línea`.
+- Controles en hover/selección: `[−] [+] [✕]` (quitar línea). Target ≥44px.
+- Cantidad y precio alineados a la derecha, tabulares.
+- Línea seleccionada: fondo `MutedBrush` + borde izquierdo 2px `PrimaryBrush`.
+- **Sin campos editables inline** (decisión Bryan): editar precio final/descuento
+  se afina sobre la marcha (ver §"Decisiones abiertas").
 
-### 3.3 Categorías (chips)
-- Fila de píldoras bajo el buscador. "TODOS" por defecto. Scroll horizontal si
-  sobran. Selección con foco visible (ring 2px primary).
+### 3.2 Línea de entrada (línea vacía — el input del modelo B)
 
-### 3.4 Carrito (derecha)
-- Lista de líneas: `cant × nombre — precio línea — [−][+][%] ✕`.
-- Descuento por línea: botón `%` abre mini-input inline (valida tope por rol).
-- Fila de línea: 48px mín. de alto (target táctil).
-- Scroll interno; el footer de totales SIEMPRE visible (fijo).
+- Última línea del ticket, con placeholder **"Escribe código o nombre…"**.
+- **Mientras escribes:**
+  - Entrada numérica (código/SKU/barras) → al coincidir UN producto, se rellena
+    solo: nombre, precio, cantidad 1. Enter fuerza el match exacto.
+  - Entrada de texto (nombre) → **dropdown de sugerencias** debajo de la línea
+    (mismo mecanismo que el autocompletado de un IDE): muestra `nombre —
+    precio — stock`. Debounce 250ms.
+  - Coincidencia ambigua (varios productos con el mismo prefijo) → dropdown con
+    todas las opciones; el cajero elige con ↑/↓ + Enter o click.
+- **Reglas de línea vacía (aprobadas Bryan + Theo):**
+  1. Solo puede existir **UNA** línea de entrada a la vez (la última).
+  2. Si pierde el foco **sin contenido** → se descarta sola (nada de fantasmas).
+  3. La venta **no avanza** (COBRAR deshabilitado) mientras exista una línea
+     vacía o a medio llenar — red de seguridad ante cualquier caso borde.
+     La línea pendiente se marca con borde `WarningBrush` + hint
+     "Línea sin completar".
+- **Escáner:** el foco SIEMPRE vive en la línea de entrada; el escáner (wedge
+  de teclado) llena el producto completo y **el foco avanza solo a una nueva
+  línea de entrada al final** (ver 4.1).
 
-### 3.5 Totales
-- Subtotal, ITBIS 18% desglosado, Descuento, separador, **TOTAL** (32px, bold,
-  color TextPrimary sobre fondo Surface).
-- Aviso ámbar si algún ítem tiene stock insuficiente: "⚠ 2 productos sin stock
-  suficiente — se venderán igual" (P3).
+### 3.3 Dropdown de sugerencias
 
-### 3.6 Botones de pago (4, siempre visibles)
-- EFECTIVO · TARJETA · TRANSFERENCIA · MIXTO — botones de superficie (blanco +
-  hairline), 44px+ alto. Hover: `MutedBrush` + borde `PrimaryBrush`.
+- Popup anclado bajo la línea de entrada: superficie blanca + hairline + sombra
+  suave (excepción permitida). Items: `nombre — precio (— stock si bajo)`.
+- Navegación ↑/↓ + Enter; Esc cierra sin seleccionar (la línea queda vacía y se
+  descarta al perder foco). Max ~8 items visibles, scroll interno.
+- Sin foco visible: NO. Con foco: item seleccionado con fondo `MutedBrush`.
 
-### 3.7 COBRAR (botón primario global)
-- 100% del ancho del panel derecho, 52px alto, fondo **AccentBrush** (`#EA580C`),
-  texto blanco, bold, F8. Hover: `AccentDarkBrush`. Sin sombra, sin cambios de layout.
+### 3.4 Catálogo visual (popup de búsqueda guiada — F2)
+
+- Modal (centrado, ~70% de la ventana, max 900×600): mismo grid de cards que
+  el catálogo actual + su propio buscador + chips de categoría.
+- **Click en card (o Enter con selección) agrega la línea al ticket SIN cerrar
+  el popup** → permite agregar varios productos de corrido (caja llena, tanda
+  de 5 productos: un solo popup).
+- Cada card muestra precio siempre (+ badge de stock bajo si aplica).
+- El popup muestra un contador "Agregados: N" para feedback.
+- Esc cierra. F2 alterna abrir/cerrar. Al cerrar, el foco vuelve a la línea
+  de entrada.
+
+### 3.5 Panel de totales (derecha)
+
+- Subtotal, ITBIS 18% desglosado, Descuento, separador, **TOTAL** (32px, bold).
+- Aviso ámbar si algún ítem tiene stock insuficiente (P3: se vende igual, avisa).
+- `[% Descuento]` y `[Cliente]` como botones ghost sobre los totales.
+
+### 3.6 Métodos de pago (4, siempre visibles)
+
+- EFECTIVO · TARJETA · TRANSFERENCIA · MIXTO — superficie blanca + hairline,
+  44px+ alto. Hover: `MutedBrush` + borde `PrimaryBrush`.
+
+### 3.7 COBRAR
+
+- 100% del ancho del panel derecho, 52px, fondo **AccentBrush**, texto blanco,
+  bold, F8. Hover: `AccentDarkBrush`. Sin sombra ni layout shift.
+- **Disabled si:** ticket vacío, línea de entrada vacía/pendiente (regla 3.2),
+  caja cerrada, sin permisos.
 
 ### 3.8 Header
-- Izquierda: marca "Uenta POS" (logo + nombre).
-- Centro: estado de caja — badge verde "Caja #12 · abierta" o gris/rojo
-  "Caja cerrada" (si cerrada, COBRAR deshabilitado y banner de aviso).
-- Derecha: usuario + rol, reloj (HH:mm), botón menú (☰ → navegación:
-  Catálogo, Inventario, Clientes, Reportes, Caja, Config).
+
+- Izquierda: "Uenta POS". Centro: badge "Caja #12 · abierta" / "Caja cerrada".
+- Derecha: usuario + rol, reloj, menú ☰ (navegación). A la derecha del todo:
+  contador de líneas del ticket actual ("[3]") junto al folio de la venta.
 
 ### 3.9 Iconos
-- **Prohibido emojis como iconos** (regla de la skill). WPF: `Path`/`Geometry`
-  vectoriales propios o `Segoe Fluent Icons` (viene con Windows 11). Un solo
-  set, un solo peso de trazo. Iconos de acción (lupa, ✕, −, +, %) con target
-  ≥32px visual y área de click ≥44px.
+
+- **Prohibido emojis como iconos.** WPF: `Path`/`Geometry` vectoriales o
+  `Segoe Fluent Icons` (Windows 11). Un solo set, un peso. Target visual ≥32px,
+  área de click ≥44px.
 
 ---
 
 ## 4. Flujos de interacción
 
-### 4.1 Agregar producto (3 vías)
-1. **Escáner:** foco en buscador → escanea → Enter automático → línea al carrito.
-2. **Búsqueda:** escribe → Enter en resultado (o click) → al carrito.
-3. **Grid:** click en card o [+ AGREGAR].
+### 4.1 Agregar producto (3 vías, coexisten)
 
-Todas las vías dejan el foco de vuelta en el buscador (loop de escaneo continuo).
+1. **Escáner (vía principal):** foco en línea de entrada → escanea → se rellena
+   solo → **foco avanza a nueva línea de entrada al final** → loop continuo.
+   Si el código ya está en el ticket: incrementa cantidad de esa línea (en vez
+   de duplicar) — decisión a confirmar (ver abiertas).
+2. **Código a mano / nombre:** escribe en la línea de entrada → match único se
+   rellena solo; ambiguo → dropdown → ↑/↓ + Enter o click.
+3. **Catálogo visual:** `F2` (o botón "Catálogo") → popup → click en cards →
+   se agregan líneas → Esc. Foco vuelve a la línea de entrada.
+
+Todas las vías terminan con el foco en la línea de entrada (loop de escaneo).
 
 ### 4.2 Cobrar (F8)
+
 1. Modal de pago (centrado, 480px): método preseleccionado según último usado.
-2. **Efectivo:** campo "Monto recibido" autofocus → muestra **VUELTO** en vivo
-   (verde, grande). Botón "Exacto" (F9) llena el monto del total.
+2. **Efectivo:** campo "Monto recibido" autofocus → **VUELTO** en vivo (verde,
+   grande). Botón "Exacto" (F9) llena el monto del total.
 3. **Tarjeta/Transferencia:** campo monto (datáfono manual — se registra el
    monto, P. hardware).
 4. **Mixto:** dos campos (efectivo + resto) con barra de progreso de cobertura.
 5. Confirmar → `SaleService.CrearVenta` (async, `AsyncRelayCommand` con
-   `IsRunning` — botón deshabilitado mientras procesa, spinner).
+   `IsRunning`, botón deshabilitado + spinner mientras procesa).
 6. Éxito → modal de recibo: [Imprimir] [PDF] [Nueva venta (Enter)]. Vuelto en
-   pantalla hasta cerrar el modal.
+   pantalla hasta cerrar. **"Nueva venta" limpia el ticket y deja una línea de
+   entrada nueva enfocada** (listo para la siguiente).
 7. Error de negocio (`Result.Failure`): mensaje inline en el modal, sin
    excepción, sin crash. Stock insuficiente = warning, NO error (P3).
 
 ### 4.3 Descuentos
-- Por línea: `%` en la fila. Global: botón "% Descuento" sobre los totales.
-- Modal con input numérico; valida tope por rol (Cajero ≤10%, Supervisor ≤25%,
-  Admin ∞ — configurable, no hardcode). Si excede: error inline + tope visible.
+
+- Global: botón "% Descuento" sobre los totales → modal con input numérico;
+  valida tope por rol (Cajero ≤10%, Supervisor ≤25%, Admin ∞ — configurable).
+- Por línea / precio final: **pendiente de afinar** (ver abiertas).
 
 ### 4.4 Caja cerrada
+
 - Banner rojo suave en header + COBRAR disabled + hint "Abra la caja para
   cobrar". Link directo a Apertura de caja.
 
@@ -218,46 +257,114 @@ Todas las vías dejan el foco de vuelta en el buscador (loop de escaneo continuo
 
 | Tecla | Acción |
 |-------|--------|
-| `Enter` | Agregar producto escaneado/buscado; confirmar modal |
-| `F2` | Foco al buscador (siempre) |
-| `F4` | Descuento global |
+| `Enter` | Confirmar match/sugerencia seleccionada; confirmar modal |
+| `↑` / `↓` | Navegar dropdown de sugerencias |
+| `F2` | Abrir/cerrar catálogo visual (popup) |
 | `F8` | COBRAR |
-| `F9` | Pago con monto exacto |
+| `F9` | Pago con monto exacto (en modal efectivo) |
+| `Esc` | Cerrar popup/modal / descartar sugerencias |
 | `+` / `-` | Subir/bajar cantidad de la línea seleccionada |
 | `Supr` | Quitar línea seleccionada |
-| `Esc` | Cerrar modal / limpiar búsqueda |
 | `F1` | Ayuda de atajos |
 
 Todo accionable por teclado (regla UX de la skill: keyboard navigation, High).
 
+> ⚠️ El mapeo final de F4 (antes "descuento global") y demás se confirma cuando
+> cerremos las decisiones abiertas de abajo.
+
 ---
 
-## 6. Accesibilidad y calidad (checklist pre-entrega)
+## 6. Decisiones — RESUELTAS (11-ago-2026, con Bryan)
 
-- [x] Contraste texto ≥4.5:1 (TextSecondary `#475569` sobre blanco = 7.6:1 ✓)
-- [x] Focus visible en TODO interactivo (ring 2px `PrimaryBrush`, no `outline-none`)
+1. **Cantidad por escaneos repetidos:** el mismo producto escaneado/escrito de
+   nuevo **incrementa la cantidad de la misma línea** (no duplica). Ticket más limpio.
+2. **Descuento por producto:** la línea tiene descuento propio (aplica al total
+   de la línea). Los permisos por rol se gestionan más adelante — ahora queda
+   sin control de rol.
+3. **Cliente:** a futuro ambos modos (Anónimo fijo + buscable en modal).
+   **Ahora: solo Anónimo.**
+4. **Atajos de teclado:** se definen en una fase dedicada más adelante. Por
+   ahora solo el mínimo: Enter (confirmar), ↑/↓ (sugerencias), F2 (catálogo),
+   F8 (COBRAR), Esc (cerrar). F4/F9 quedan fuera hasta esa fase.
+5. **Recibo: PENDIENTE** — ver §6.1 abajo; Bryan pidió ser ilustrado antes de decidir.
+
+---
+
+## 6.1 Recibo — estado actual (11-ago-2026, para Bryan)
+
+**Lo que existe hoy (Fase 0):**
+- Puerto `IReceiptPrinter.PrintReceiptAsync(SaleDto)` en `POS.Application\Abstractions`.
+- Implementación `ConsoleReceiptPrinter` (Fase 0): imprime un recibo ASCII de
+  42 chars de ancho **en la consola** (solo devs, validación del flujo).
+  Formato: encabezado UENTA — RECIBO DE VENTA, recibo #, fecha, items
+  (nombre + cantidad × precio + total), subtotal, ITBIS 18%, descuento (solo
+  si > 0), TOTAL, pagos por método, "¡Gracias por su compra!".
+- **NO hay PDF** (el scope lo promete, pero no hay implementación ni paquete).
+- **NO está conectado al flujo de cobro**: `ConfirmPaymentAsync` crea la venta
+  y abre el modal de resultado, pero **nunca llama a imprimir**. La única
+  referencia viva está en tests.
+- **Modal de resultado** (lo que ve la cajera): "Venta completada" + venta # +
+  hora, TOTAL grande, VUELTO, warnings de stock y botón "Nueva venta (Enter)".
+  No hay botones [Imprimir]/[PDF] — eran un deseo de la spec vieja, nunca implementados.
+
+**Ruta a Fase 1 (aprobada por Bryan 11-ago, ejecución por pasos):** térmica ESC/POS
+80mm real vía P/Invoke a winspool.drv + exportar PDF. UI del modal de resultado
+agregaría [Imprimir] [PDF] [Nueva venta].
+
+**Plan por pasos (verificación rápida en cada uno):**
+
+| # | Paso | Estado |
+|---|------|--------|
+| 1 | **Motor de contenido** `ReceiptContentBuilder` (Application, puro): SaleDto → texto 42 chars. Compartido por consola/ESC/POS/PDF | ✅ HECHO (11-ago, commit) |
+| 2 | **Encoder ESC/POS** (puro): texto → bytes (init, centrado, negrita, corte, CP437/850 para ñ/acentos) | ⏳ |
+| 3 | **Envío a impresora** P/Invoke winspool.drv (raw por nombre de impresora, error claro si no existe) | ⏳ |
+| 4 | **PDF** (QuestPDF): mismo contenido, archivo guardable/imprimible | ⏳ |
+| 5 | **Conectar al cobro**: ConfirmPaymentAsync imprime + modal [Imprimir] [PDF] [Nueva venta] | ⏳ |
+| 6 | **Ajustes**: selector de impresora + auto-imprimir (con pantalla de Ajustes de Fase 1) | ⏳ |
+
+**Paso 1 — detalles implementados (11-ago-2026):**
+- `POS.Application/Receipts/ReceiptContentBuilder.cs` — función pura `Build(SaleDto)`.
+  Formato conservado del console (42 chars) con mejoras: descuento por línea
+  (`Desc.: -X.XX` solo si > 0), descuento global en negativo, nombres de pago en
+  español (Efectivo/Tarjeta/Transferencia), cantidades fraccionarias limpias
+  (2 → "2", 0.5 → "0.5"), montos alineados a columna fija (campo 10).
+- `ConsoleReceiptPrinter` delega en el builder (un solo cerebro de layout).
+- Tests: `ReceiptContentBuilderTests` — golden completo + descuentos + métodos de
+  pago + fraccionario + ancho 42. **26/26 tests verdes.**
+- Gotcha: al escribir golden tests con alineación, NO contar espacios a ojo —
+  "50.00"/"36.00" tienen 5 chars (no 6); verificar con lengths o char codes.
+
+---
+
+## 7. Accesibilidad y calidad (checklist pre-entrega)
+
+- [x] Contraste texto ≥4.5:1 (TextSecondary sobre blanco ✓)
+- [x] Focus visible en TODO interactivo (ring 2px `PrimaryBrush`)
 - [x] Orden de tabulación = orden visual (izq → der, arriba → abajo)
 - [x] Sin emojis como iconos; iconos vectoriales consistentes
 - [x] Cursor pointer en todo lo clickable (`Cursor="Hand"`)
 - [x] Hover/press con transición 150–300ms; sin cambios de layout al presionar
 - [x] `AutomationProperties.Name` en iconos y controles sin texto
-- [x] Animaciones respetan `SystemParameters.ClientAreaAnimation` (reduced motion)
-- [x] Estados disabled claros (opacidad 0.4 + sin acción, semántica nativa)
-- [x] Montos siempre `decimal` → `N2` (nunca double), tabular numbers
+- [x] Animaciones respetan `SystemParameters.ClientAreaAnimation`
+- [x] Estados disabled claros (opacidad 0.4 + semántica nativa)
+- [x] Montos siempre `decimal` → `N2`, tabular numbers
 - [x] Async con `AsyncRelayCommand` (nunca `async void` en code-behind)
-- [x] Conversión de presentación con `IValueConverter` (bool→visibility, etc.),
-      no propiedades de Visibility en el ViewModel (guía stack WPF de la skill)
-- [x] Perf: virtualizar el grid de productos (`VirtualizingStackPanel`) y
-      medir con el Performance Profiler antes de optimizar (guía stack WPF)
+- [x] Conversión de presentación con `IValueConverter`, no propiedades
+      Visibility en el ViewModel (guía stack WPF de la skill)
+- [x] Perf: virtualizar listas largas (`VirtualizingStackPanel`)
 
-## 7. Anti-patrones a evitar (de MASTER + específicos POS)
+---
 
-- ❌ Sombras decorativas en superficies de contenido (solo modales)
+## 8. Anti-patrones a evitar (de MASTER + específicos POS)
+
+- ❌ Sombras decorativas en superficies de contenido (solo popups/modales)
 - ❌ Hover con elevación/transform (layout shift)
 - ❌ Más de 2 acentos en pantalla (Primary + Accent)
 - ❌ Texto denso sin jerarquía (el TOTAL y COBRAR mandan)
-- ❌ Animaciones llamativas (motion 1/10: solo micro-transiciones de hover/foco)
+- ❌ Animaciones llamativas (motion 1/10)
 - ❌ Emojis como iconos de sistema
-- ❌ Inputs que pierden el foco tras cada escaneo (rompe el flujo del cajero)
+- ❌ **Líneas vacías fantasma** (regla 3.2: una sola, se descarta sola)
+- ❌ **Catálogo siempre visible** (el modelo B es a demanda)
+- ❌ Inputs que pierden el foco tras cada escaneo (rompe el loop del cajero)
 - ❌ Ocultar métodos de pago en menús (deben estar a un click)
 - ❌ Botones que cambian de tamaño al hacer hover (layout shift)
