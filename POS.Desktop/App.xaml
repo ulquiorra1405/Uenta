@@ -239,6 +239,38 @@
             </Setter>
         </Style>
 
+        <!-- Botón de sugerencia (dropdown de la línea de entrada): SIN hover propio.
+             El resaltado lo maneja el ListBoxItem (IsSelected → MutedBrush, navegación
+             por teclado ↑/↓). Un hover de mouse aquí duplicaría el highlight (bug reportado:
+             'dos hover, el del mouse resalta mucho'). -->
+        <Style x:Key="SuggestionButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderThickness="0"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Solo opacidad al deshabilitar; nada en hover/pressed/foco -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Card de producto: superficie + hairline, sin sombra -->
         <Style x:Key="ProductCard" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
