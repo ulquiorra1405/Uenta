@@ -18,6 +18,7 @@
         <Geometry x:Key="CheckIcon">M20 6 9 17l-5-5</Geometry>
         <Geometry x:Key="PercentIcon">M19 5 5 19 M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z M17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z</Geometry>
         <Geometry x:Key="GridIcon">M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z</Geometry>
+        <Geometry x:Key="BagIcon">M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0</Geometry>
 
         <Style x:Key="MoneyText" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
@@ -169,7 +170,8 @@
                 </Grid>
 
                 <!-- Líneas del ticket -->
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <Grid Grid.Row="1">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding CartLines}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -270,7 +272,34 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </ScrollViewer>
+                    </ScrollViewer>
+
+                    <!-- Estado vacío del ticket (solo cuando no hay líneas) -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CartLines.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource MutedBrush}"
+                                HorizontalAlignment="Center">
+                            <Path Data="{StaticResource BagIcon}" Stroke="{StaticResource TextSecondaryBrush}"
+                                  StrokeThickness="1.6" Width="22" Height="22" Stretch="Uniform"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Ticket vacío" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center" Margin="0,10,0,0" />
+                        <TextBlock Text="Escanea un código, escribe un nombre o abre el catálogo (F2)"
+                                   FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Grid>
 
                 <!-- Dropdown de sugerencias (EN FLUJO, no Popup: el Popup es un HWND separado que roba el foco del teclado y el Enter nunca llega a la línea de entrada) -->
                 <Border Grid.Row="2" Margin="0,0,0,8" Background="{StaticResource SurfaceBrush}" CornerRadius="8"
@@ -589,7 +618,8 @@
                     </ScrollViewer>
 
                     <!-- Grid de productos -->
-                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid Grid.Row="3">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding Products}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -649,7 +679,30 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </ScrollViewer>
+                        </ScrollViewer>
+
+                        <!-- Estado vacío del catálogo -->
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}" IsHitTestVisible="False">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Products.Count}" Value="0" />
+                                                <Condition Binding="{Binding IsCatalogBusy}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="Sin resultados" />
+                            <Run Text=" — " />
+                            <Run Text="{Binding CatalogSearchText, Mode=OneWay}" FontWeight="Bold" />
+                        </TextBlock>
+                    </Grid>
 
                     <!-- Footer -->
                     <Grid Grid.Row="4" Margin="0,12,0,0">
@@ -657,8 +710,29 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{Binding CatalogStatus}" FontSize="11.5"
-                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CatalogStatus}" FontSize="11.5"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                            <!-- Feedback 3.4: agregados en esta apertura del popup -->
+                            <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="999"
+                                    Padding="8,3" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CatalogAdds}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock FontSize="10.5" FontWeight="Bold"
+                                           Foreground="{StaticResource PrimaryDarkBrush}">
+                                    <Run Text="Agregados: " />
+                                    <Run Text="{Binding CatalogAdds}" />
+                                </TextBlock>
+                            </Border>
+                        </StackPanel>
                         <Button Grid.Column="1" Content="Cerrar  (Esc)" Padding="16,8"
                                 Style="{StaticResource SecondaryButton}" Command="{Binding CloseCatalogCommand}"
                                 AutomationProperties.Name="CerrarCatalogo"/>

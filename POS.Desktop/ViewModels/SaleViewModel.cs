@@ -312,9 +312,14 @@ public partial class SaleViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isCatalogOpen;
 
+    /// <summary>Productos agregados al ticket desde que se abrió el popup (feedback 3.4).</summary>
+    [ObservableProperty]
+    private int _catalogAdds;
+
     [RelayCommand]
     private void OpenCatalog()
     {
+        CatalogAdds = 0;
         IsCatalogOpen = true;
         CatalogFocusRequested?.Invoke();
     }
@@ -440,6 +445,10 @@ public partial class SaleViewModel : ViewModelBase
         }
 
         RecalculateTotals();
+
+        // Feedback del popup catálogo (3.4): cuenta los agregados de esta apertura.
+        if (IsCatalogOpen)
+            CatalogAdds++;
     }
 
     [RelayCommand]

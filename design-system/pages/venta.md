@@ -379,7 +379,7 @@ Rediseño ticket-centered (modelo B) ejecutado **por pasos** (verificación ráp
 |---|------|--------|
 | 1 | **Layout ticket-centered**: ticket (izq, 60%) + cobro (der, 40%); catálogo a demanda en popup (F2) que agrega sin cerrar; input de código/nombre al pie del ticket | ✅ HECHO (commit 11-ago) |
 | 2 | **Línea de entrada con reglas del modelo B**: match único por código → se rellena sola; no-código → dropdown de sugerencias por nombre (debounce 250ms, precio+stock); UNA línea pendiente a la vez; COBRAR bloqueado con línea pendiente (borde warning); escáner rellena + foco avanza a nueva línea | ✅ HECHO (commit 11-ago) |
-| 3 | **Pulido**: contador "Agregados: N" en el popup, atajos finos, estados vacíos | ⏳ |
+| 3 | **Pulido**: contador "Agregados: N" en el popup, atajos finos, estados vacíos | ✅ HECHO (commit 11-ago) |
 
 Detalles del paso 1 (11-ago):
 - SaleView.xaml reestructurado: 60*/Auto/40* (ticket | separador | cobro). El panel de cobro
@@ -415,3 +415,13 @@ Detalles del paso 2 (11-ago):
   Enter → incrementa Jugo a 2×; "zzz" → COBRAR IsEnabled=False + borde warning visible.
   Dato de la DB demo: "Café con leche" (CAF-001) está INACTIVO (IsActive=0) — por eso no
   aparecía en las búsquedas; la DB real vive en %LOCALAPPDATA%\Uenta\pos.db.
+
+Detalles del paso 3 (11-ago):
+- Contador "Agregados: N" en el footer del popup catálogo (feedback 3.4): se resetea al abrir
+  (OpenCatalog) y suma por cada AddProduct mientras el popup está abierto; badge solo visible
+  con N > 0 (cuidado: el primer intento quedó invertido — trigger que mostraba con 0).
+- Estado vacío del ticket: placeholder centrado (icono bolsa + "Ticket vacío" + instrucción
+  "Escanea un código, escribe un nombre o abre el catálogo (F2)") visible solo con 0 líneas.
+- Estado vacío del catálogo: "Sin resultados — <término>" centrado cuando hay 0 productos y
+  no está cargando (MultiDataTrigger).
+- Verificado: build 0/0, 26/26 tests, capturas (vacío → popup → Agregados: 2 → Sin resultados).
