@@ -331,20 +331,16 @@
                     </ItemsControl>
                     </ScrollViewer>
 
-                    <!-- Estado vacío del ticket (solo cuando no hay líneas Y el dropdown no está abierto:
-                         al escribir, el dropdown re-centra la columna y el indicador saltaría) -->
+                    <!-- Estado vacío del ticket (siempre visible sin líneas: el dropdown ahora
+                         es superposición fija, no empuja el layout — nada salta ni se oculta) -->
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
                         <StackPanel.Style>
                             <Style TargetType="StackPanel">
                                 <Setter Property="Visibility" Value="Collapsed" />
                                 <Style.Triggers>
-                                    <MultiDataTrigger>
-                                        <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding CartLines.Count}" Value="0" />
-                                            <Condition Binding="{Binding IsSuggestionsOpen}" Value="False" />
-                                        </MultiDataTrigger.Conditions>
+                                    <DataTrigger Binding="{Binding CartLines.Count}" Value="0">
                                         <Setter Property="Visibility" Value="Visible" />
-                                    </MultiDataTrigger>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
@@ -363,8 +359,12 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Dropdown de sugerencias (EN FLUJO, no Popup: el Popup es un HWND separado que roba el foco del teclado y el Enter nunca llega a la línea de entrada) -->
-                <Border Grid.Row="2" Margin="0,0,0,8" Background="{StaticResource SurfaceBrush}" CornerRadius="8"
+                <!-- Dropdown de sugerencias (superposición FIJA sobre el área del ticket, anclado
+                     abajo, encima de la línea de entrada: no empuja el layout, así el estado vacío
+                     centrado no salta ni se oculta al escribir. Popup NO: es un HWND separado que
+                     roba el foco del teclado y el Enter nunca llega a la línea) -->
+                <Border Grid.Row="1" Panel.ZIndex="10" VerticalAlignment="Bottom" Margin="0,0,0,8"
+                        Background="{StaticResource SurfaceBrush}" CornerRadius="8"
                         BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                         Visibility="{Binding IsSuggestionsOpen, Converter={StaticResource BoolToVis}}">
                     <Border.Effect>
@@ -515,7 +515,7 @@
                 </Grid>
             </Grid>
 
-            <!-- (el dropdown de sugerencias vive en flujo dentro de la columna ticket — ver arriba) -->
+            <!-- (el dropdown de sugerencias es superposición fija dentro de la columna ticket — ver arriba) -->
 
             <!-- Separador -->
             <Border Grid.Column="1" Width="1" Background="{StaticResource BorderBrush}" Margin="0,8" />
