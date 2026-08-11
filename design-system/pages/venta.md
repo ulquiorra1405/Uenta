@@ -577,3 +577,21 @@ DescuentoGlobal 137×38?137×38, LineaEntrada 756×81?756×81. Build 0/0.
 
 **Regla para estilos nuevos:** nunca cambiar BorderThickness en triggers — reservar el espacio
 y cambiar solo el Brush.
+
+## Hint fantasma exacto + dropdown con hover único (11-ago, commit 4d330b8)
+
+Bryan (16:29): (1) "el texto digitado empieza en una línea diferente del hint... es como si
+el texto tuviera sangría y el hint no"; (2) el dropdown de sugerencias tiene "dos hover, uno
+con el teclado y otro con el mouse, el del mouse resalta mucho".
+
+**Fix 1 (hint):** el borde izquierdo ya coincidía (medido 0px), pero el hint era FontSize 11.5
+gris vs texto 14 negro y no compensaba el borde de 1px del TextBox (Margin 38 vs padding
+38+1). Ahora el hint es **fantasma exacto** del texto: FontSize 14, Margin 39 (38 + borde),
+misma fuente y posición; solo cambia el color. Regla: un hint debe ser indistinguible en
+geometría del texto que reemplaza.
+
+**Fix 2 (dropdown):** el Button interno de cada sugerencia heredaba el estilo Button global
+(trigger IsMouseOver ? PrimaryDarkBrush, verde oscuro) ? hover del mouse resaltaba mucho.
+Nuevo estilo SuggestionButton sin triggers de hover/pressed/foco; el único resaltado es el
+del teclado (ListBoxItem IsSelected ? MutedBrush). Regla: elementos que ya tienen un
+"selected" propio (ListBox) no deben tener hover adicional en su contenido clickeable.
