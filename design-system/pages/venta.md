@@ -615,3 +615,15 @@ en el ListBoxItem pinta el MISMO MutedBrush que IsSelected; el SuggestionButton 
 queda neutro. Verificado: mouse y teclado ? mismo gris #F1F5F9.
 Regla: **en un ListBox con selección por teclado, hover de mouse y selección deben pintar
 el mismo brush.**
+
+## Hint oculto al enfocar la línea de entrada (11-ago, commit 8cc8ecd)
+
+Bryan (19:16): "cuando el foco esta en el textbox, quitemos el hint". El fix del caret
+(bd11f77) no bastaba: con el hint superpuesto, el caret al inicio quedaba visualmente
+ENCIMA de la 'E' del hint ? parecía que seguía "dentro" de él.
+
+Fix: el hint solo se muestra si la caja está vacía Y SIN foco (MultiDataTrigger:
+SearchText == "" AND IsKeyboardFocused(SearchBox) == False). Al enfocar (clic, escáner,
+Enter) desaparece ? el caret queda en un campo limpio. Comportamiento placeholder estándar.
+Verificado: con foco ? oculto; sin foco ? visible.
+Regla: **un hint superpuesto nunca debe convivir con el caret — ocultarlo al enfocar.**
