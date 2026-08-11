@@ -475,9 +475,21 @@ Fix de 4 bugs reportados por Bryan (11-ago, verificado con UIA + capturas):
    de Agregados del paso 3 — ojo con triggers de badge.
 2. **Descuento global no bajaba al quitar líneas**: al quitar un item, GlobalDiscount quedaba
    igual → subtotal 50 con descuento 80 → total 0 oculto (negativo enmascarado) y el recibo
-   inconsistente (SaleService lo rechazaba con DISCOUNT_EXCEEDS_TOTAL). Fix: clamp en
-   `RecalculateTotals` — `if (GlobalDiscount > Subtotal) GlobalDiscount = Subtotal;` con
-   guarda anti-recursión `_isRecalculating` (OnGlobalDiscountChanged → RecalculateTotals).
+   inconsistente (SaleService lo rechazaba con DISCOUNT_EXCEEDS_TOTAL).
+   - **Parche inicial (15:05):** clamp en `RecalculateTotals` — `if (GlobalDiscount > Subtotal)
+     GlobalDiscount = Subtotal;` con guarda anti-recursión `_isRecalculating`.
+   - **Fix real (15:30, commit 0b48888):** Bryan reportó que el bug persistía — el clamp solo
+     evitaba el negativo visible, no la disputa de fondo. Causa raíz: `Subtotal` ya incorpora
+     los descuentos de línea (`Subtotal = Σ(UnitPrice×Qty − LineDiscount)`), así que al quitar
+     una línea descontada el subtotal cae mucho y el monto global fijo quedaba clavado.
+     Solución: capturar el **% efectivo** que el monto representa del subtotal al escribirlo
+     (`_globalDiscountPct = clamp(value/Subtotal, 0, 1)`) y, cuando el ticket SE ENCOGE
+     (`newSubtotal < Subtotal`), escalar el monto a `newSubtotal × pct` (solo a la baja).
+     Nunca sube solo al agregar líneas — el control del monto lo tiene quien cobra. Ticket
+     vacío → descuento 0. Red de seguridad final: `GlobalDiscount > Subtotal → = Subtotal`.
+     Verificado UIA: global 30 sobre 105 (28.57%) → 50% línea en Jugo (80→40) → subtotal 65
+     → global escala a 18.57; quitar la línea descontada → subtotal 25 → global 7.14. El %
+     efectivo se conserva en cada paso.
 3. **Dropdown afectaba el indicador de ticket vacío**: con carrito vacío, abrir el dropdown
    (fila en flujo) re-centraba el placeholder y lo hacía saltar. Fix: el placeholder ahora se
    muestra solo con `CartLines.Count == 0` Y `IsSuggestionsOpen == False` (MultiDataTrigger).
