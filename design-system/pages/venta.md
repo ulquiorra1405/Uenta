@@ -378,7 +378,7 @@ Rediseño ticket-centered (modelo B) ejecutado **por pasos** (verificación ráp
 | # | Paso | Estado |
 |---|------|--------|
 | 1 | **Layout ticket-centered**: ticket (izq, 60%) + cobro (der, 40%); catálogo a demanda en popup (F2) que agrega sin cerrar; input de código/nombre al pie del ticket | ✅ HECHO (commit 11-ago) |
-| 2 | **Línea de entrada con reglas del modelo B**: match único por código → se rellena sola; no-código → dropdown de sugerencias por nombre (debounce 250ms, precio+stock); UNA línea pendiente a la vez; COBRAR bloqueado con línea pendiente (borde warning); escáner rellena + foco avanza a nueva línea | ⏳ |
+| 2 | **Línea de entrada con reglas del modelo B**: match único por código → se rellena sola; no-código → dropdown de sugerencias por nombre (debounce 250ms, precio+stock); UNA línea pendiente a la vez; COBRAR bloqueado con línea pendiente (borde warning); escáner rellena + foco avanza a nueva línea | ✅ HECHO (commit 11-ago) |
 | 3 | **Pulido**: contador "Agregados: N" en el popup, atajos finos, estados vacíos | ⏳ |
 
 Detalles del paso 1 (11-ago):
@@ -393,3 +393,25 @@ Detalles del paso 1 (11-ago):
 - Verificado: build 0/0, 26/26 tests, capturas DPI-aware (popup abre → agrega sin cerrar → ticket
   conserva línea al cerrar). Nota: Teams al frente estorbaba las capturas; traer ventana al frente
   con SetForegroundWindow antes de capturar.
+
+Detalles del paso 2 (11-ago):
+- `SearchText` es SOLO la línea de entrada; el buscador del popup catálogo pasó a `CatalogSearchText`
+  (estados independientes; el popup ya no reacciona a lo que escribe el cajero en el ticket).
+- Auto-add por código exacto (SKU/barcode, case-insensitive): al coincidir UN producto se agrega
+  solo y el foco vuelve a la línea (loop de escáner). Si ya está en el ticket → incrementa cantidad
+  (decisión cerrada: cantidad repetida = incrementar).
+- Dropdown de sugerencias por nombre: debounce 250ms en hilo UI (async/await captura el
+  SynchronizationContext — el Task.Run original rompía colecciones del UI), máx 8 items,
+  `nombre - precio - stock bajo`, selección con ↑/↓ + Enter o click, Esc cierra sin seleccionar.
+- Regla 3.2: `HasPendingEntry=true` con texto sin resolver → COBRAR deshabilitado
+  (CanExecute real en CobrarCommand — antes CanCobrar() era código muerto sin CanExecute)
+  + borde warning + hint "Línea sin completar".
+- **Lección de foco (bug peludo):** el Popup de WPF es un HWND separado que roba el foco del
+  teclado — el Enter jamás llegaba a la línea de entrada (el KeyBinding de Enter tampoco funciona:
+  el TextBox se lo traga con AcceptsReturn=false). Fix: dropdown EN FLUJO dentro de la columna
+  ticket (fila propia entre líneas e input) + `PreviewKeyDown` en code-behind para el Enter.
+  El Popup de catálogo (F2) se quedó como overlay Grid dentro de la ventana (sin HWND propio).
+- Verificado end-to-end con UIA + log de debug: JGO-001 → línea agregada; "ju" → dropdown;
+  Enter → incrementa Jugo a 2×; "zzz" → COBRAR IsEnabled=False + borde warning visible.
+  Dato de la DB demo: "Café con leche" (CAF-001) está INACTIVO (IsActive=0) — por eso no
+  aparecía en las búsquedas; la DB real vive en %LOCALAPPDATA%\Uenta\pos.db.

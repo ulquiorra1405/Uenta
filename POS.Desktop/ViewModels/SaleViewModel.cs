@@ -71,6 +71,18 @@ public partial class CategoryFilterItem : ObservableObject
     private bool _isSelected;
 }
 
+/// <summary>Item del dropdown de sugerencias de la línea de entrada (modelo B).</summary>
+public partial class EntrySuggestionItem : ObservableObject
+{
+    public ProductDto Product { get; init; } = null!;
+    public string Name => Product.Name;
+    public decimal Price => Product.Price.Amount;
+    public bool LowStock => Product.LowStock;
+
+    [ObservableProperty]
+    private bool _isSelected;
+}
+
 /// <summary>
 /// Pantalla de venta (Fase 1). Catálogo a la izquierda, carrito + cobro a la derecha.
 /// Flujo escáner: el foco vive en el buscador; Enter agrega y vuelve el foco.
@@ -95,13 +107,200 @@ public partial class SaleViewModel : ViewModelBase
     /// <summary>La vista se suscribe para devolver el foco al buscador (loop de escaneo).</summary>
     public event Action? FocusSearchRequested;
 
+    // ─────────────────────────── Línea de entrada (modelo B) ───────────────────────────
+
+    /// <summary>Texto de la línea de entrada del ticket (código o nombre).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CobrarCommand))]
+    private string _searchText = string.Empty;
+
+    /// <summary>Sugerencias del dropdown (búsqueda por nombre; ambiguo → elige el cajero).</summary>
+    public ObservableCollection<EntrySuggestionItem> EntrySuggestions { get; } = [];
+
+    [ObservableProperty]
+    private bool _isSuggestionsOpen;
+
+    [ObservableProperty]
+    private int _selectedSuggestionIndex = -1;
+
+    /// <summary>Línea con texto sin resolver: COBRAR bloqueado + borde warning (regla 3.2).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CobrarCommand))]
+    private bool _hasPendingEntry;
+
+    private CancellationTokenSource? _entryDebounceCts;
+
+    partial void OnSearchTextChanged(string value) => ScheduleEntrySearch(value);
+
+    /// <summary>
+    /// Debounce 250ms de la línea de entrada. Corre en el hilo UI (async/await captura
+    /// el SynchronizationContext) para que las colecciones y comandos sean seguros.
+    /// </summary>
+    private async void ScheduleEntrySearch(string value)
+    {
+        _entryDebounceCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _entryDebounceCts = cts;
+        try
+        {
+            await Task.Delay(250, cts.Token);
+            if (cts.Token.IsCancellationRequested) return;
+            await RunEntrySearchAsync(value.Trim(), cts.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            // Nunca dejar la línea en silencio: si la búsqueda falla, queda pendiente y visible.
+            IsSuggestionsOpen = false;
+            HasPendingEntry = true;
+            System.Diagnostics.Debug.WriteLine($"[SaleViewModel] EntrySearch: {ex}");
+        }
+    }
+
+    private async Task RunEntrySearchAsync(string term, CancellationToken token)
+    {
+        if (term.Length == 0)
+        {
+            HasPendingEntry = false;
+            IsSuggestionsOpen = false;
+            return;
+        }
+
+        var results = await _productService.SearchAsync(term, token);
+        if (token.IsCancellationRequested) return;
+
+        // Match EXACTO de código (SKU/barcode) → se rellena sola (loop de escáner).
+        var exact = results.FirstOrDefault(p =>
+            (!string.IsNullOrEmpty(p.Sku) && string.Equals(p.Sku, term, StringComparison.OrdinalIgnoreCase)) ||
+            (!string.IsNullOrEmpty(p.Barcode) && string.Equals(p.Barcode, term, StringComparison.OrdinalIgnoreCase)));
+
+        if (exact is not null && results.Count(r =>
+                (!string.IsNullOrEmpty(r.Sku) && string.Equals(r.Sku, term, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(r.Barcode) && string.Equals(r.Barcode, term, StringComparison.OrdinalIgnoreCase))) == 1)
+        {
+            AddProduct(exact);
+            SearchText = string.Empty;
+            HasPendingEntry = false;
+            IsSuggestionsOpen = false;
+            FocusSearchRequested?.Invoke();
+            return;
+        }
+
+        // Búsqueda por nombre / ambiguo → dropdown de sugerencias (máx 8).
+        EntrySuggestions.Clear();
+        foreach (var p in results.Take(8))
+            EntrySuggestions.Add(new EntrySuggestionItem { Product = p });
+
+        IsSuggestionsOpen = EntrySuggestions.Count > 0;
+        SelectedSuggestionIndex = EntrySuggestions.Count > 0 ? 0 : -1;
+        SyncSelectedSuggestion();
+        HasPendingEntry = true;
+    }
+
+    partial void OnSelectedSuggestionIndexChanged(int value) => SyncSelectedSuggestion();
+
+    private void SyncSelectedSuggestion()
+    {
+        for (var i = 0; i < EntrySuggestions.Count; i++)
+            EntrySuggestions[i].IsSelected = i == SelectedSuggestionIndex;
+    }
+
+    /// <summary>↓: siguiente sugerencia.</summary>
+    [RelayCommand]
+    private void SelectNextSuggestion()
+    {
+        if (EntrySuggestions.Count == 0) return;
+        SelectedSuggestionIndex = (SelectedSuggestionIndex + 1) % EntrySuggestions.Count;
+    }
+
+    /// <summary>↑: anterior sugerencia.</summary>
+    [RelayCommand]
+    private void SelectPreviousSuggestion()
+    {
+        if (EntrySuggestions.Count == 0) return;
+        SelectedSuggestionIndex = SelectedSuggestionIndex <= 0 ? EntrySuggestions.Count - 1 : SelectedSuggestionIndex - 1;
+    }
+
+    /// <summary>Esc: cierra el dropdown sin seleccionar (la línea queda pendiente).</summary>
+    [RelayCommand]
+    private void DismissSuggestions() => IsSuggestionsOpen = false;
+
+    /// <summary>
+    /// Enter en la línea de entrada: agrega la sugerencia seleccionada, o el match
+    /// exacto de código; si no hay match, la línea queda pendiente (bloquea COBRAR).
+    /// </summary>
+    [RelayCommand]
+    private void AddFromSearch()
+    {
+        var term = SearchText.Trim();
+        if (term.Length == 0) return;
+
+        if (IsSuggestionsOpen && SelectedSuggestionIndex >= 0 && SelectedSuggestionIndex < EntrySuggestions.Count)
+        {
+            var selected = EntrySuggestions[SelectedSuggestionIndex];
+            AddProduct(selected.Product);
+            ClearEntry();
+            return;
+        }
+
+        var exact = EntrySuggestions
+            .Select(s => s.Product)
+            .FirstOrDefault(p =>
+                (!string.IsNullOrEmpty(p.Sku) && string.Equals(p.Sku, term, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrEmpty(p.Barcode) && string.Equals(p.Barcode, term, StringComparison.OrdinalIgnoreCase)));
+
+        if (exact is not null)
+        {
+            AddProduct(exact);
+            ClearEntry();
+        }
+        // Sin match: no se agrega nada; el texto queda y HasPendingEntry bloquea COBRAR.
+    }
+
+    /// <summary>Agrega desde el popup catálogo (Enter con código exacto contra los cargados).</summary>
+    [RelayCommand]
+    private void AddFromCatalogSearch()
+    {
+        var term = CatalogSearchText.Trim();
+        if (term.Length == 0) return;
+
+        var match = Products.FirstOrDefault(p =>
+            (!string.IsNullOrEmpty(p.Barcode) && string.Equals(p.Barcode, term, StringComparison.OrdinalIgnoreCase)) ||
+            (!string.IsNullOrEmpty(p.Sku) && string.Equals(p.Sku, term, StringComparison.OrdinalIgnoreCase)));
+
+        if (match is not null)
+        {
+            AddProduct(match);
+            CatalogSearchText = string.Empty;
+            CatalogFocusRequested?.Invoke();
+        }
+    }
+
+    /// <summary>Click en una sugerencia del dropdown: agrega el producto.</summary>
+    [RelayCommand]
+    private void AddSuggestion(EntrySuggestionItem? item)
+    {
+        if (item is null) return;
+        AddProduct(item.Product);
+        ClearEntry();
+    }
+
+    private void ClearEntry()
+    {
+        SearchText = string.Empty;
+        HasPendingEntry = false;
+        IsSuggestionsOpen = false;
+        FocusSearchRequested?.Invoke();
+    }
+
     // ─────────────────────────── Catálogo (a demanda, popup F2) ───────────────────────────
 
     public ObservableCollection<ProductDto> Products { get; } = [];
     public ObservableCollection<CategoryFilterItem> CategoryFilters { get; } = [];
 
+    /// <summary>Texto del buscador DENTRO del popup catálogo (independiente de la línea de entrada).</summary>
     [ObservableProperty]
-    private string _searchText = string.Empty;
+    private string _catalogSearchText = string.Empty;
 
     [ObservableProperty]
     private bool _isCatalogBusy;
@@ -130,7 +329,7 @@ public partial class SaleViewModel : ViewModelBase
     /// <summary>La vista se suscribe para enfocar el buscador del popup catálogo.</summary>
     public event Action? CatalogFocusRequested;
 
-    partial void OnSearchTextChanged(string value) => ScheduleSearch();
+    partial void OnCatalogSearchTextChanged(string value) => ScheduleSearch();
 
     [RelayCommand]
     private void SelectCategory(CategoryFilterItem? filter)
@@ -146,15 +345,26 @@ public partial class SaleViewModel : ViewModelBase
     private void ScheduleSearch()
     {
         _debounceCts?.Cancel();
-        _debounceCts = new CancellationTokenSource();
-        var token = _debounceCts.Token;
+        var cts = new CancellationTokenSource();
+        _debounceCts = cts;
 
-        _ = Task.Run(async () =>
+        _ = RefreshCatalogAsync(cts);
+    }
+
+    /// <summary>Debounce del buscador del catálogo; corre en el hilo UI por las colecciones.</summary>
+    private async Task RefreshCatalogAsync(CancellationTokenSource cts)
+    {
+        try
         {
-            await Task.Delay(250, token);
-            if (!token.IsCancellationRequested)
-                await LoadProductsAsync();
-        });
+            await Task.Delay(250, cts.Token);
+            if (cts.Token.IsCancellationRequested) return;
+            await LoadProductsAsync();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SaleViewModel] CatalogSearch: {ex}");
+        }
     }
 
     private async Task LoadProductsAsync()
@@ -162,7 +372,7 @@ public partial class SaleViewModel : ViewModelBase
         try
         {
             IsCatalogBusy = true;
-            var all = await _productService.SearchAsync(SearchText.Trim());
+            var all = await _productService.SearchAsync(CatalogSearchText.Trim());
             Products.Clear();
 
             var selected = CategoryFilters.FirstOrDefault(f => f.IsSelected);
@@ -181,25 +391,6 @@ public partial class SaleViewModel : ViewModelBase
         finally
         {
             IsCatalogBusy = false;
-        }
-    }
-
-    /// <summary>Flujo escáner/búsqueda: Enter agrega si el texto es SKU o código de barras exacto.</summary>
-    [RelayCommand]
-    private void AddFromSearch()
-    {
-        var term = SearchText.Trim();
-        if (term.Length == 0) return;
-
-        var match = Products.FirstOrDefault(p =>
-            (!string.IsNullOrEmpty(p.Barcode) && string.Equals(p.Barcode, term, StringComparison.OrdinalIgnoreCase)) ||
-            (!string.IsNullOrEmpty(p.Sku) && string.Equals(p.Sku, term, StringComparison.OrdinalIgnoreCase)));
-
-        if (match is not null)
-        {
-            AddProduct(match);
-            SearchText = string.Empty;
-            FocusSearchRequested?.Invoke();
         }
     }
 
@@ -312,7 +503,7 @@ public partial class SaleViewModel : ViewModelBase
         HasLowStockWarnings = CartLines.Any(l => l.LowStock);
     }
 
-    private bool CanCobrar() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen;
+    private bool CanCobrar() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry;
 
     // ─────────────────────────── Cobro ───────────────────────────
 
@@ -365,7 +556,7 @@ public partial class SaleViewModel : ViewModelBase
         ChangeAmount = received > Total ? Math.Round(received - Total, 2, MidpointRounding.AwayFromZero) : 0;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanCobrar))]
     private void Cobrar()
     {
         PaymentError = null;
@@ -501,6 +692,8 @@ public partial class SaleViewModel : ViewModelBase
 
         GlobalDiscount = 0;
         SearchText = string.Empty;
+        HasPendingEntry = false;
+        IsSuggestionsOpen = false;
         LastSale = null;
         IsResultOpen = false;
         RecalculateTotals();
@@ -530,10 +723,16 @@ public partial class SaleViewModel : ViewModelBase
     [RelayCommand]
     private void FocusSearch() => FocusSearchRequested?.Invoke();
 
-    /// <summary>Esc: cierra el catálogo si está abierto; si no, el modal de cobro.</summary>
+    /// <summary>Esc: cierra el dropdown de sugerencias; si no, catálogo; si no, modal de cobro.</summary>
     [RelayCommand]
     private void CancelOverlay()
     {
+        if (IsSuggestionsOpen)
+        {
+            DismissSuggestions();
+            return;
+        }
+
         if (IsCatalogOpen)
         {
             CloseCatalog();
