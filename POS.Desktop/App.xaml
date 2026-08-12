@@ -212,6 +212,12 @@
         </Style>
 
         <!-- Input -->
+        <!-- Template custom SIN Margin duplicado en PART_ContentHost.
+             LECCIÓN (20:13): el PART_ContentHost del TextBox ya aplica el Padding del
+             TextBox internamente. Poner Margin="{TemplateBinding Padding}" en el
+             ScrollViewer SUMA ambos → ~74px de offset fantasma en el texto editable,
+             desalineándolo del hint superpuesto (Bryan lo vio: 'el texto editable debe
+             tener algún ajuste'). El template default de WPF es la referencia correcta. -->
         <Style TargetType="TextBox">
             <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
             <Setter Property="Padding" Value="12,9" />
@@ -227,7 +233,9 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="6">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                            <!-- ScrollViewer SIN Margin ni Padding: el PART_ContentHost ya
+                                 aplica el Padding del TextBox internamente. Nada se suma. -->
+                            <ScrollViewer x:Name="PART_ContentHost" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsKeyboardFocused" Value="True">
