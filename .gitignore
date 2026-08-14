@@ -19,3 +19,6 @@ Thumbs.db
 
 # UI/UX Pro Max skill (local, fuera del repo)
 .agents/
+
+# Memoria del agente (local, no va al repo publico)
+memory/

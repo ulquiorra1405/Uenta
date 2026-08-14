@@ -313,6 +313,9 @@ agregarÃ­a [Imprimir] [PDF] [Nueva venta].
 
 **Plan por pasos (verificaciÃ³n rÃ¡pida en cada uno):**
 
+> Los pasos pendientes (3, 5 y 6) pasaron al plan maestro **`PLAN.md`** (Fase 1A,
+> P1.1â€“P1.3) el 13-ago-2026. Esta tabla queda como histÃ³rico del motor de contenido.
+
 | # | Paso | Estado |
 |---|------|--------|
 | 1 | **Motor de contenido** `ReceiptContentBuilder` (Application, puro): SaleDto â†’ texto 42 chars. Compartido por consola/ESC/POS/PDF | âœ… HECHO (11-ago, commit) |
@@ -559,101 +562,101 @@ reportados). Principio rector: **ningÃºn campo se mueve solo**.
 - Build 0/0, 42/42 tests. Modelo: `LineDiscountMode { Percent, Amount }` + `DiscountPercent`/
   `FixedDiscount`/`DiscountInputText` en `CartLineViewModel`.
 
-## Botones sin cambio de tamaño al presionar (11-ago, commit f7ef44f)
+## Botones sin cambio de tamaï¿½o al presionar (11-ago, commit f7ef44f)
 
-Bryan reportó que los botones de línea (+ - ?) cambiaban de tamaño al presionarlos — bug
-visual molesto. **Causa raíz:** todos los estilos de botón cambiaban BorderThickness en el
+Bryan reportï¿½ que los botones de lï¿½nea (+ - ?) cambiaban de tamaï¿½o al presionarlos ï¿½ bug
+visual molesto. **Causa raï¿½z:** todos los estilos de botï¿½n cambiaban BorderThickness en el
 trigger IsKeyboardFocused (0?2, 0?2, 1?2, 0?1) y al hacer clic WPF otorga foco de teclado al
-botón ? el borde aparecía y el control crecía 2px. Afectaba a TODOS los botones (COBRAR,
-chips, categorías) y también a los TextBox (borde 1?2 al enfocarse: línea de entrada,
+botï¿½n ? el borde aparecï¿½a y el control crecï¿½a 2px. Afectaba a TODOS los botones (COBRAR,
+chips, categorï¿½as) y tambiï¿½n a los TextBox (borde 1?2 al enfocarse: lï¿½nea de entrada,
 descuento global).
 
-**Fix — patrón de borde reservado:** BorderThickness constante por estilo (2px botones
-sólidos/ghost; 1px payment/icon/inputs) con BorderBrush=Transparent en reposo; los triggers
+**Fix ï¿½ patrï¿½n de borde reservado:** BorderThickness constante por estilo (2px botones
+sï¿½lidos/ghost; 1px payment/icon/inputs) con BorderBrush=Transparent en reposo; los triggers
 de foco solo cambian el COLOR del borde, nunca el grosor. Cero cambio de layout en cualquier
-estado; el foco sigue visible por color. Verificado UIA con bounding rects antes/después de
-invocar con foco: + 36×21?36×21, descuento 36×21?36×21, chip % 56×48?56×48,
-DescuentoGlobal 137×38?137×38, LineaEntrada 756×81?756×81. Build 0/0.
+estado; el foco sigue visible por color. Verificado UIA con bounding rects antes/despuï¿½s de
+invocar con foco: + 36ï¿½21?36ï¿½21, descuento 36ï¿½21?36ï¿½21, chip % 56ï¿½48?56ï¿½48,
+DescuentoGlobal 137ï¿½38?137ï¿½38, LineaEntrada 756ï¿½81?756ï¿½81. Build 0/0.
 
-**Regla para estilos nuevos:** nunca cambiar BorderThickness en triggers — reservar el espacio
+**Regla para estilos nuevos:** nunca cambiar BorderThickness en triggers ï¿½ reservar el espacio
 y cambiar solo el Brush.
 
-## Hint fantasma exacto + dropdown con hover único (11-ago, commit 4d330b8)
+## Hint fantasma exacto + dropdown con hover ï¿½nico (11-ago, commit 4d330b8)
 
-Bryan (16:29): (1) "el texto digitado empieza en una línea diferente del hint... es como si
-el texto tuviera sangría y el hint no"; (2) el dropdown de sugerencias tiene "dos hover, uno
+Bryan (16:29): (1) "el texto digitado empieza en una lï¿½nea diferente del hint... es como si
+el texto tuviera sangrï¿½a y el hint no"; (2) el dropdown de sugerencias tiene "dos hover, uno
 con el teclado y otro con el mouse, el del mouse resalta mucho".
 
-**Fix 1 (hint):** el borde izquierdo ya coincidía (medido 0px), pero el hint era FontSize 11.5
+**Fix 1 (hint):** el borde izquierdo ya coincidï¿½a (medido 0px), pero el hint era FontSize 11.5
 gris vs texto 14 negro y no compensaba el borde de 1px del TextBox (Margin 38 vs padding
 38+1). Ahora el hint es **fantasma exacto** del texto: FontSize 14, Margin 39 (38 + borde),
-misma fuente y posición; solo cambia el color. Regla: un hint debe ser indistinguible en
-geometría del texto que reemplaza.
+misma fuente y posiciï¿½n; solo cambia el color. Regla: un hint debe ser indistinguible en
+geometrï¿½a del texto que reemplaza.
 
 **Fix 2 (dropdown):** el Button interno de cada sugerencia heredaba el estilo Button global
 (trigger IsMouseOver ? PrimaryDarkBrush, verde oscuro) ? hover del mouse resaltaba mucho.
-Nuevo estilo SuggestionButton sin triggers de hover/pressed/foco; el único resaltado es el
+Nuevo estilo SuggestionButton sin triggers de hover/pressed/foco; el ï¿½nico resaltado es el
 del teclado (ListBoxItem IsSelected ? MutedBrush). Regla: elementos que ya tienen un
 "selected" propio (ListBox) no deben tener hover adicional en su contenido clickeable.
 
-## Caret al inicio en caja vacía + hover unificado en sugerencias (11-ago, commit bd11f77)
+## Caret al inicio en caja vacï¿½a + hover unificado en sugerencias (11-ago, commit bd11f77)
 
-Bryan (18:46) aclaró los dos ajustes (no eran lo que parecían):
+Bryan (18:46) aclarï¿½ los dos ajustes (no eran lo que parecï¿½an):
 
-**1. Caret, no alineación.** "Cuando pongo el cursor sobre el textbox el cursor queda en
-'Escrib|e código o nombre...'". Al hacer clic en la caja vacía, WPF coloca el caret en el
-punto del clic — DENTRO del hint superpuesto (TextBlock fantasma), como si fuera texto real.
-Fix: PreviewMouseLeftButtonDown en SearchBox/CatalogSearchBox ? si el campo está vacío,
+**1. Caret, no alineaciï¿½n.** "Cuando pongo el cursor sobre el textbox el cursor queda en
+'Escrib|e cï¿½digo o nombre...'". Al hacer clic en la caja vacï¿½a, WPF coloca el caret en el
+punto del clic ï¿½ DENTRO del hint superpuesto (TextBlock fantasma), como si fuera texto real.
+Fix: PreviewMouseLeftButtonDown en SearchBox/CatalogSearchBox ? si el campo estï¿½ vacï¿½o,
 Focus() + CaretIndex = 0 + e.Handled = true (bloquea el posicionamiento por clic del
 TextBox). Verificado: clic en medio del hint + escribir ? el texto aparece al INICIO.
-Regla: **cualquier campo con hint superpuesto debe forzar caret 0 al hacer clic en vacío.**
+Regla: **cualquier campo con hint superpuesto debe forzar caret 0 al hacer clic en vacï¿½o.**
 
 **2. Hover unificado, no eliminado.** "Quiero que tanto el mouse como el teclado tengan el
 mismo hover". Antes: teclado = IsSelected ? MutedBrush (gris sutil); mouse = estilo Button
 global ? PrimaryDarkBrush (verde fuerte). Dos estilos peleando. Fix: trigger IsMouseOver
 en el ListBoxItem pinta el MISMO MutedBrush que IsSelected; el SuggestionButton (4d330b8)
 queda neutro. Verificado: mouse y teclado ? mismo gris #F1F5F9.
-Regla: **en un ListBox con selección por teclado, hover de mouse y selección deben pintar
+Regla: **en un ListBox con selecciï¿½n por teclado, hover de mouse y selecciï¿½n deben pintar
 el mismo brush.**
 
-## Hint oculto al enfocar la línea de entrada (11-ago, commit 8cc8ecd)
+## Hint oculto al enfocar la lï¿½nea de entrada (11-ago, commit 8cc8ecd)
 
 Bryan (19:16): "cuando el foco esta en el textbox, quitemos el hint". El fix del caret
 (bd11f77) no bastaba: con el hint superpuesto, el caret al inicio quedaba visualmente
-ENCIMA de la 'E' del hint ? parecía que seguía "dentro" de él.
+ENCIMA de la 'E' del hint ? parecï¿½a que seguï¿½a "dentro" de ï¿½l.
 
-Fix: el hint solo se muestra si la caja está vacía Y SIN foco (MultiDataTrigger:
-SearchText == "" AND IsKeyboardFocused(SearchBox) == False). Al enfocar (clic, escáner,
-Enter) desaparece ? el caret queda en un campo limpio. Comportamiento placeholder estándar.
+Fix: el hint solo se muestra si la caja estï¿½ vacï¿½a Y SIN foco (MultiDataTrigger:
+SearchText == "" AND IsKeyboardFocused(SearchBox) == False). Al enfocar (clic, escï¿½ner,
+Enter) desaparece ? el caret queda en un campo limpio. Comportamiento placeholder estï¿½ndar.
 Verificado: con foco ? oculto; sin foco ? visible.
-Regla: **un hint superpuesto nunca debe convivir con el caret — ocultarlo al enfocar.**
+Regla: **un hint superpuesto nunca debe convivir con el caret ï¿½ ocultarlo al enfocar.**
 
-## Pulido moderno línea de entrada (11-ago, commit 99d61a4)
+## Pulido moderno lï¿½nea de entrada (11-ago, commit 99d61a4)
 
-Bryan (19:22) pidió modernizar; propuse 3 mejoras, aprobadas (19:25):
+Bryan (19:22) pidiï¿½ modernizar; propuse 3 mejoras, aprobadas (19:25):
 
-1. **Chip 'Enter' en el hint** (estilo GitHub/Linear): "(Enter agrega)" ? chip pequeño
+1. **Chip 'Enter' en el hint** (estilo GitHub/Linear): "(Enter agrega)" ? chip pequeï¿½o
    (Border redondeado, MutedBrush + hairline, texto "Enter" 10.5 SemiBold). Misma regla de
-   visibilidad (vacío + sin foco). Las teclas se comunican como keycaps, no con palabras.
+   visibilidad (vacï¿½o + sin foco). Las teclas se comunican como keycaps, no con palabras.
 2. **Lupa verde al enfocar**: Path.Style con DataTrigger (ElementName=SearchBox,
-   IsKeyboardFocused) ? Stroke TextSecondaryBrush?PrimaryBrush. El Stroke se movió al
-   Setter del Style (un valor local ganaría al trigger). Refuerza el estado activo.
-3. **Aviso fuera del campo**: "Línea sin completar" sale del TextBox (donde competía con
-   códigos largos y el caret) a una fila nueva debajo, izquierda, altura fija 18px
-   (espacio reservado ? sin salto de layout). El borde naranja queda como señal secundaria.
+   IsKeyboardFocused) ? Stroke TextSecondaryBrush?PrimaryBrush. El Stroke se moviï¿½ al
+   Setter del Style (un valor local ganarï¿½a al trigger). Refuerza el estado activo.
+3. **Aviso fuera del campo**: "Lï¿½nea sin completar" sale del TextBox (donde competï¿½a con
+   cï¿½digos largos y el caret) a una fila nueva debajo, izquierda, altura fija 18px
+   (espacio reservado ? sin salto de layout). El borde naranja queda como seï¿½al secundaria.
 
 Reglas nuevas: (a) las teclas en hints se muestran como keycaps, no texto; (b) iconos que
 cambian de color con el foco: el color debe vivir en el Style (Setter), no en el elemento;
-(c) mensajes de validación fuera del campo de entrada, en fila de altura reservada.
+(c) mensajes de validaciï¿½n fuera del campo de entrada, en fila de altura reservada.
 
 ## Aire lupa vs texto/hint (11-ago, commit bb88c95)
 
 Bryan (19:32): "separar el hint de la lupa tal cual esta el texto editable". El hint YA
 estaba alineado con el texto (misma X), pero el gap con la lupa era de 10px y, ambos grises,
-se percibían pegados. Fix: mover los DOS juntos a la derecha — padding izq. del SearchBox
+se percibï¿½an pegados. Fix: mover los DOS juntos a la derecha ï¿½ padding izq. del SearchBox
 38?48, hint margin 39?49 (48+1). Regla del fantasma exacto intacta: hint y texto editable
 comparten la misma X (49); el respiro con la lupa pasa a 20px.
 
-Lección de medición: un código EXACTO en la línea de entrada se auto-agrega al ticket y
-limpia el campo (loop de escáner) — para comparar visualmente texto editable vs hint hay
-que usar un término NO exacto (p.ej. "PAN", no "PAN-001").
+Lecciï¿½n de mediciï¿½n: un cï¿½digo EXACTO en la lï¿½nea de entrada se auto-agrega al ticket y
+limpia el campo (loop de escï¿½ner) ï¿½ para comparar visualmente texto editable vs hint hay
+que usar un tï¿½rmino NO exacto (p.ej. "PAN", no "PAN-001").

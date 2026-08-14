@@ -1,7 +1,7 @@
 # PROJECT — POS (Punto de Venta)
 
-> Estado: **Fase 0 — esqueleto en curso**
-> Última actualización: 05-ago-2026
+> Estado: **Fase 0.5 (cimientos técnicos) cerrada — Fase 1C en curso** (catálogo: P3.1 ✅ + P3.1b ✅; ver `PLAN.md` para la ejecución detallada)
+> Última actualización: 14-ago-2026 · build 0/0, 65/65 tests verdes
 
 ---
 
@@ -247,10 +247,18 @@ VS Code + C# Dev Kit sigue siendo buena opción para tareas ligeras (editar, rev
 
 ## 9. Roadmap
 
+> El documento maestro de ejecución es **`PLAN.md`** (merge del roadmap, del plan del
+> recibo de `venta.md` §6.1 y de la deuda técnica de la revisión de 13-ago). Esta tabla
+> es el resumen de alto nivel; los pasos concretos y su verificación viven ahí.
+
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| **Fase 0** | Esqueleto + ejemplo punta a punta (vender producto con stock → SQLite → Result<T>) | 🔄 en curso |
-| **Fase 1** | MVP: catálogo, inventario, ventas, caja, recibos (térmico+PDF), usuarios/roles, clientes, reportes básicos | ⏳ |
+| **Fase 0** | Esqueleto + ejemplo punta a punta (vender producto con stock → SQLite → Result<T>) + rediseño ticket-centered + motor de recibo | ✅ cerrada |
+| **Fase 0.5** | Cimientos técnicos: pricing único, split de SaleView, async void, secuencia de numeración, estilos | ✅ cerrada |
+| **Fase 1A** | Recibo real: impresora ESC/POS + conectar al cobro + Ajustes | ⏳ (PLAN.md) |
+| **Fase 1B** | Usuarios/roles + login, caja (apertura/cierre), auditoría | ⏳ (PLAN.md) |
+| **Fase 1C** | Catálogo completo (variantes P9) + movimientos de inventario | 🔄 en curso — P3.1 ✅ + P3.1b ✅ (14-ago) |
+| **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | ⏳ (PLAN.md) |
 | **Fase 2** | Devoluciones/notas de crédito, compras/proveedores, e-CF (DGII) | ⏳ |
 | **Fase 3** | Fidelización, reportes avanzados, multi-sucursal, POS.Api + app móvil | ⏳ |
 
@@ -258,6 +266,6 @@ VS Code + C# Dev Kit sigue siendo buena opción para tareas ligeras (editar, rev
 
 ## 10. Documentos relacionados
 
+- `PLAN.md` — **plan maestro de ejecución** (merge de roadmap, recibo y deuda técnica)
 - `memory/projects/pos.md` — memoria operativa del proyecto (estado, lecciones, contexto)
-- `memory/2026-08-05.md` — registro diario del arranque
 - `POS.sln` — solución con los 4 proyectos ya creados
