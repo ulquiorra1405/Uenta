@@ -6,12 +6,14 @@ public interface INavigationService
 {
     ViewModelBase? Current { get; }
     event Action<ViewModelBase?>? CurrentChanged;
-    void NavigateTo<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase;
+    Task NavigateToAsync<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase;
 }
 
 /// <summary>
 /// Navegación simple entre ViewModels (inyectados por DI). El MainWindow bindea
 /// su ContentControl a <see cref="Current"/>; los DataTemplates eligen la vista.
+/// Devuelve <see cref="Task"/> (nunca async void): los invocadores await-ean y
+/// deciden cómo reportar un fallo de carga.
 /// </summary>
 public class NavigationService : INavigationService
 {
@@ -24,7 +26,7 @@ public class NavigationService : INavigationService
 
     public event Action<ViewModelBase?>? CurrentChanged;
 
-    public async void NavigateTo<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase
+    public async Task NavigateToAsync<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase
     {
         var vm = _services.GetRequiredService<TViewModel>();
         configure?.Invoke(vm);

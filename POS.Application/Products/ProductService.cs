@@ -15,9 +15,17 @@ public class ProductService
 
     public ProductService(IProductRepository products) => _products = products;
 
-    public async Task<List<ProductDto>> SearchAsync(string? term = null, CancellationToken ct = default)
+    /// <summary>Búsqueda de VENTA: solo productos activos (dropdown, catálogo popup).</summary>
+    public async Task<List<ProductDto>> SearchActiveAsync(string? term = null, CancellationToken ct = default)
     {
-        var products = await _products.SearchAsync(term, ct);
+        var products = await _products.SearchActiveAsync(term, ct);
+        return products.Select(ToDto).ToList();
+    }
+
+    /// <summary>Búsqueda de GESTIÓN: todos los productos, incluidos inactivos (para reactivar).</summary>
+    public async Task<List<ProductDto>> SearchAllAsync(string? term = null, CancellationToken ct = default)
+    {
+        var products = await _products.SearchAllAsync(term, ct);
         return products.Select(ToDto).ToList();
     }
 
@@ -27,14 +35,19 @@ public class ProductService
         if (validation is { } error)
             return Result.Failure<ProductDto>(error.ErrorCode, error.ErrorMessage);
 
-        if (!string.IsNullOrWhiteSpace(request.Sku) && await _products.ExistsBySkuAsync(request.Sku!, ct: ct))
-            return Result.Failure<ProductDto>("SKU_DUPLICATED", $"Ya existe un producto con el SKU '{request.Sku}'.");
+        var sku = NormalizeCode(request.Sku);
+        var barcode = NormalizeCode(request.Barcode);
+
+        if (sku is not null && await _products.ExistsBySkuAsync(sku, ct: ct))
+            return Result.Failure<ProductDto>("SKU_DUPLICATED", $"Ya existe un producto con el SKU '{sku}'.");
+        if (barcode is not null && await _products.ExistsByBarcodeAsync(barcode, ct: ct))
+            return Result.Failure<ProductDto>("BARCODE_DUPLICATED", $"Ya existe un producto con el código de barras '{barcode}'.");
 
         var product = new Product
         {
             Name = request.Name.Trim(),
-            Sku = string.IsNullOrWhiteSpace(request.Sku) ? null : request.Sku.Trim(),
-            Barcode = string.IsNullOrWhiteSpace(request.Barcode) ? null : request.Barcode.Trim(),
+            Sku = sku,
+            Barcode = barcode,
             CategoryId = request.CategoryId,
             Price = new Money(request.Price),
             Cost = new Money(request.Cost),
@@ -57,13 +70,17 @@ public class ProductService
         if (validation is { } error)
             return Result.Failure<ProductDto>(error.ErrorCode, error.ErrorMessage);
 
-        if (!string.IsNullOrWhiteSpace(request.Sku) &&
-            await _products.ExistsBySkuAsync(request.Sku!, request.Id, ct))
-            return Result.Failure<ProductDto>("SKU_DUPLICATED", $"Ya existe otro producto con el SKU '{request.Sku}'.");
+        var sku = NormalizeCode(request.Sku);
+        var barcode = NormalizeCode(request.Barcode);
+
+        if (sku is not null && await _products.ExistsBySkuAsync(sku, request.Id, ct))
+            return Result.Failure<ProductDto>("SKU_DUPLICATED", $"Ya existe otro producto con el SKU '{sku}'.");
+        if (barcode is not null && await _products.ExistsByBarcodeAsync(barcode, request.Id, ct))
+            return Result.Failure<ProductDto>("BARCODE_DUPLICATED", $"Ya existe otro producto con el código de barras '{barcode}'.");
 
         product.Name = request.Name.Trim();
-        product.Sku = string.IsNullOrWhiteSpace(request.Sku) ? null : request.Sku.Trim();
-        product.Barcode = string.IsNullOrWhiteSpace(request.Barcode) ? null : request.Barcode.Trim();
+        product.Sku = sku;
+        product.Barcode = barcode;
         product.CategoryId = request.CategoryId;
         product.Price = new Money(request.Price);
         product.Cost = new Money(request.Cost);
@@ -87,6 +104,48 @@ public class ProductService
         await _products.SaveChangesAsync(ct);
         return Result.Success();
     }
+
+    /// <summary>
+    /// Reactiva un producto inactivo (desde la ficha o el catálogo de gestión).
+    /// </summary>
+    public async Task<Result> ReactivateAsync(long id, CancellationToken ct = default)
+    {
+        var product = await _products.GetByIdAsync(id, ct);
+        if (product is null)
+            return Result.Failure("PRODUCT_NOT_FOUND", "El producto no existe.");
+
+        product.IsActive = true;
+        await _products.UpdateAsync(product, ct);
+        await _products.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Previsualización de "duplicar y editar" (regla P9): devuelve una copia SIN persistir.
+    /// El SKU/código quedan vacíos (el usuario los define) y el stock en 0 (stock propio).
+    /// El guardado final pasa por CreateAsync.
+    /// </summary>
+    public ProductDto CreateDuplicatePreview(ProductDto source)
+    {
+        return new ProductDto
+        {
+            Id = 0,
+            Name = $"{source.Name.Trim()} (copia)",
+            Sku = null,
+            Barcode = null,
+            CategoryId = source.CategoryId,
+            CategoryName = source.CategoryName,
+            Price = source.Price,
+            Cost = source.Cost,
+            Stock = 0,
+            MinStock = source.MinStock,
+            IsActive = true
+        };
+    }
+
+    /// <summary>Formato canónico de SKU/código de barras: trim + mayúsculas. Null si vacío.</summary>
+    private static string? NormalizeCode(string? code) =>
+        string.IsNullOrWhiteSpace(code) ? null : code.Trim().ToUpperInvariant();
 
     private static (string ErrorCode, string ErrorMessage)? Validate(CreateProductRequest request)
     {

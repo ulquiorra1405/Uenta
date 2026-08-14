@@ -18,15 +18,23 @@
         <conv:NullToVisibilityConverter x:Key="NullToVis" />
         <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
         <conv:EnumEqualsConverter x:Key="EnumEqualsConverter" />
+        <conv:IsNegativeConverter x:Key="NegConverter" />
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
         <!-- ─── Colores ─── -->
-        <!-- Acentos (los únicos colores de marca; intercambiables vía Ajustes a futuro) -->
+        <!-- Acentos (los únicos colores de marca; intercambiables vía Ajustes a futuro)
+             NORMA DE CONTRASTE: blanco sobre un acento SOLO si el acento da ≥4.5:1 (WCAG AA).
+             PrimaryBrush/AccentBrush (#059669/#EA580C) NO cumplen para texto normal (3.8/3.6:1) →
+             se usan para bordes, iconos, texto sobre claro y selección.
+             PrimaryDark/AccentDark (#047857/#C2410C, 5.5/5.2:1) = relleno de botones sólidos.
+             PrimaryStrong/AccentStrong (#065F46/#9A3412, 7.7/7.3:1) = hover de botones sólidos. -->
         <SolidColorBrush x:Key="PrimaryBrush" Color="#059669" />
         <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#047857" />
+        <SolidColorBrush x:Key="PrimaryStrongBrush" Color="#065F46" />
         <SolidColorBrush x:Key="PrimaryLightBrush" Color="#D1FAE5" />
         <SolidColorBrush x:Key="AccentBrush" Color="#EA580C" />
         <SolidColorBrush x:Key="AccentDarkBrush" Color="#C2410C" />
+        <SolidColorBrush x:Key="AccentStrongBrush" Color="#9A3412" />
         <SolidColorBrush x:Key="AccentLightBrush" Color="#FFEDD5" />
         <!-- Neutros (dominantes: el color es de los acentos, no del fondo) -->
         <SolidColorBrush x:Key="BackgroundBrush" Color="#F8FAFC" />
@@ -40,7 +48,9 @@
         <SolidColorBrush x:Key="WarningBrush" Color="#D97706" />
         <SolidColorBrush x:Key="WarningLightBrush" Color="#FEF3C7" />
         <SolidColorBrush x:Key="HeaderBrush" Color="#0F172A" />
-        <SolidColorBrush x:Key="ScrimBrush" Color="#99000000" />
+        <!-- Scrim suave (40%): el foco lo pone el popup + su sombra, no el apagón.
+             El zoom/fade de apertura lo maneja OverlayAnimator (Behaviors). -->
+        <SolidColorBrush x:Key="ScrimBrush" Color="#66000000" />
 
         <!-- ─── Tipografías (fallback Segoe UI si Rubik/Nunito no están instaladas) ─── -->
         <FontFamily x:Key="DisplayFont">Rubik, Segoe UI Variable Display, Segoe UI</FontFamily>
@@ -58,18 +68,19 @@
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         </Style>
 
-        <!-- Botón primario (sólido). Hover = oscurecer (sin elevación ni sombras). -->
+        <!-- Botón primario OUTLINE (fondo blanco, color en borde+texto). Texto PrimaryDark (#047857,
+             AA sobre blanco); borde Primary. Hover: fondo claro + borde oscuro (igual que el resto
+             de botones: el feedback de interactividad es el fondo, no solo el borde). -->
         <Style TargetType="Button">
             <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Padding" Value="16,10" />
-            <!-- Borde SIEMPRE 2px (transparente en reposo): cambiar BorderThickness al enfocar
-                 hace que el botón crezca al hacer clic (gana foco de teclado). Solo se
-                 cambia el color del borde. -->
-            <Setter Property="BorderBrush" Value="Transparent" />
+            <!-- Borde SIEMPRE 2px: cambiar BorderThickness al enfocar hace que el botón crezca
+                 al hacer clic (gana foco de teclado). Solo se cambia el color del borde. -->
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
             <Setter Property="BorderThickness" Value="2" />
-            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -84,17 +95,58 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Chrome" Property="Opacity" Value="0.8" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
                             </Trigger>
                             <!-- Focus visible (accesibilidad): solo color, nunca grosor -->
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryStrongBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botón de acento OUTLINE (COBRAR / Confirmar pago): fondo blanco, borde Accent,
+             texto AccentDark (AA sobre blanco). Hover: fondo claro + borde oscuro
+             (mismo patrón que el resto de botones). -->
+        <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AccentDarkBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource AccentLightBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource AccentDarkBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource AccentLightBrush}" />
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource AccentStrongBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -177,10 +229,12 @@
             </Setter>
         </Style>
 
-        <!-- Chip de categoría (píldora) -->
+        <!-- Chip de selección (píldora → radius 6, coherente con botones/cards del sistema).
+             Hover = fondo suave + borde Primary; seleccionado = PrimaryDark + blanco (AA). -->
         <Style x:Key="CategoryChip" TargetType="ToggleButton">
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="MinHeight" Value="30" />
             <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="12.5" />
@@ -190,20 +244,24 @@
                     <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="Chrome"
                                 Background="Transparent"
-                                CornerRadius="999"
+                                CornerRadius="6"
                                 BorderBrush="{StaticResource BorderBrush}"
                                 BorderThickness="1"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource MutedBrush}" />
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                                <Setter Property="Foreground" Value="White" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -288,6 +346,31 @@
             <Setter Property="BorderThickness" Value="1" />
         </Style>
 
+        <!-- ─── Overlay / popup (patrón unificado, modernizado 14-ago) ───
+             OverlayScrim: Grid que cubre la app; animado por OverlayAnimator
+             (fade del scrim + zoom del popup). NACE COLAPSADO: si naciera visible,
+             un IsOpen=false aplicado sobre el default false no dispara el callback
+             y el overlay quedaría abierto al arrancar (bug reportado 14-ago).
+             Usar junto a DialogSurface. -->
+        <Style x:Key="OverlayScrim" TargetType="Grid">
+            <Setter Property="Background" Value="{StaticResource ScrimBrush}" />
+            <Setter Property="Visibility" Value="Collapsed" />
+        </Style>
+
+        <!-- DialogSurface: superficie del popup con sombra elevada (Blur 32 →
+             sombra "floating", más moderna que la de 24). El zoom de entrada lo
+             anima OverlayAnimator sobre este Border (hijo directo del scrim). -->
+        <Style x:Key="DialogSurface" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="32" ShadowDepth="6" Opacity="0.28" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Botón de icono compacto (cantidades − + ✕): flat, sin relleno de color fuerte -->
         <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="Transparent" />
@@ -327,12 +410,167 @@
             </Setter>
         </Style>
 
+        <!-- Botones de control de la barra de título propia (min/max/close).
+             Cuadrados 44x44 (área táctil), hover suave; cerrar = hover rojo. -->
+        <!-- Controles de ventana: nunca retienen foco/hover tras el click (Focusable=False). -->
+        <Style x:Key="TitleBarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Width" Value="44" />
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource MutedBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource BorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Cerrar: hover DangerLight + icono Danger (señal estándar de cierre) -->
+        <Style x:Key="TitleBarCloseButton" TargetType="Button" BasedOn="{StaticResource TitleBarButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource DangerLightBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource DangerBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Iconos vectoriales compartidos (regla dura: sin emojis como iconos) -->
+        <Geometry x:Key="SearchIcon">M21 21l-4.35-4.35 M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z</Geometry>
+        <Geometry x:Key="CloseIcon">M18 6L6 18 M6 6l12 12</Geometry>
+        <Geometry x:Key="PlusIcon">M12 5v14 M5 12h14</Geometry>
+        <Geometry x:Key="MinusIcon">M5 12h14</Geometry>
+        <Geometry x:Key="WarningIcon">M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01</Geometry>
+        <Geometry x:Key="CheckIcon">M20 6 9 17l-5-5</Geometry>
+        <Geometry x:Key="PercentIcon">M19 5 5 19 M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z M17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z</Geometry>
+        <Geometry x:Key="GridIcon">M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z</Geometry>
+        <Geometry x:Key="BagIcon">M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0</Geometry>
+        <!-- Iconos de control de ventana (barra de título propia, estilo feather)
+             Maximizar = rectángulo simple; Restaurar = dos rectángulos (copy). -->
+        <Geometry x:Key="MinimizeIcon">M5 12h14</Geometry>
+        <Geometry x:Key="MaximizeIcon">M4 4h16v16H4z</Geometry>
+        <Geometry x:Key="RestoreIcon">M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1</Geometry>
+
+        <!-- Iconos de la barra de título (acciones): panel (sidebar) + settings (futuro) -->
+        <Geometry x:Key="PanelIcon">M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M12 3v18</Geometry>
+        <Geometry x:Key="SettingsIcon">M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z</Geometry>
+        <!-- Iconos TEMPORALES (estilo feather, Geometry inline). Bryan los reemplazará
+             por archivos SVG reales en una fase posterior (ver PLAN.md, trazabilidad #11). -->
+        <Geometry x:Key="EditIcon">M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z</Geometry>
+        <Geometry x:Key="PowerIcon">M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10</Geometry>
+
+        <!-- Estilos compartidos de la pantalla de venta (migrados de SaleView.xaml,
+             P0.5: un solo hogar para los estilos; cero hex hardcodeado en vistas) -->
+        <Style x:Key="MoneyText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+        </Style>
+
+        <!-- Chip de método de pago (Button con selección por SelectedMethod). Radius 6 + hover con fondo. -->
+        <Style x:Key="MethodChipBase" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Chrome" Background="Transparent" CornerRadius="6"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource MutedBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.7" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="MethodChipCash" TargetType="Button" BasedOn="{StaticResource MethodChipBase}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SelectedMethod}" Value="Cash">
+                    <Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="MethodChipCard" TargetType="Button" BasedOn="{StaticResource MethodChipBase}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SelectedMethod}" Value="Card">
+                    <Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="MethodChipTransfer" TargetType="Button" BasedOn="{StaticResource MethodChipBase}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding SelectedMethod}" Value="Transfer">
+                    <Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Mapeo ViewModel → Vista (navegación por DataTemplate) -->
         <DataTemplate DataType="{x:Type vm:ProductListViewModel}">
             <views:ProductListView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ProductEditViewModel}">
-            <views:ProductEditView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SaleViewModel}">
             <views:SaleView />

@@ -14,6 +14,13 @@ public static class DbSeeder
     {
         await db.Database.MigrateAsync();
 
+        // Secuencia de numeración: siembra la fila única si no existe.
+        if (!await db.Sequences.AnyAsync())
+        {
+            db.Sequences.Add(new Sequence { Id = 1, LastNumber = 0 });
+            await db.SaveChangesAsync();
+        }
+
         if (!await db.Categories.AnyAsync())
         {
             db.Categories.AddRange(

@@ -1,0 +1,109 @@
+<UserControl x:Class="POS.Desktop.Views.TotalsPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:enums="clr-namespace:POS.Domain.Enums;assembly=POS.Domain"
+             mc:Ignorable="d"
+             d:DesignHeight="420" d:DesignWidth="460">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Aviso stock -->
+        <Border Grid.Row="0" Background="{StaticResource WarningLightBrush}" CornerRadius="6" Padding="8,6" Margin="0,0,0,10">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasLowStockWarnings}" Value="True">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Horizontal">
+                <Path Data="{StaticResource WarningIcon}" Stroke="{StaticResource WarningBrush}"
+                      StrokeThickness="1.8" Width="13" Height="13" Stretch="Uniform"
+                      VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="Hay productos que superan el stock disponible. Se venderán igual (aviso no bloqueante)."
+                           FontSize="11" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- Totales -->
+        <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,10">
+            <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Subtotal" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Subtotal, StringFormat=RD$ {0:N2}}" FontSize="13" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="ITBIS 18% (incluido)" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Itbis, StringFormat=RD$ {0:N2}}" FontSize="13" Margin="0,4,0,0" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Descuento global (RD$)" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding GlobalDiscount, UpdateSourceTrigger=PropertyChanged}"
+                             Width="110" Padding="6,3" FontSize="12" HorizontalContentAlignment="Right"
+                             AutomationProperties.Name="DescuentoGlobal"
+                             ToolTip="Monto fijo en RD$: no cambia solo al quitar productos" Margin="0,4,0,0" />
+
+                    <!-- Aviso: el descuento global supera el subtotal (COBRAR queda bloqueado) -->
+                    <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,6,0,0"
+                                Visibility="{Binding GlobalDiscountExceedsSubtotal, Converter={StaticResource BoolToVis}}">
+                        <Path Data="{StaticResource WarningIcon}" Stroke="{StaticResource DangerBrush}"
+                              StrokeThickness="1.8" Width="13" Height="13" Stretch="Uniform"
+                              VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock Text="El descuento supera el subtotal — ajusta el monto" FontSize="11"
+                                   Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,10" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="TOTAL" FontSize="16" FontWeight="Bold"
+                               FontFamily="{StaticResource DisplayFont}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Total, StringFormat=RD$ {0:N2}}"
+                               FontSize="26" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Métodos de pago -->
+        <UniformGrid Grid.Row="2" Columns="2" Margin="0,0,0,8">
+            <Button Style="{StaticResource PaymentButton}" Content="EFECTIVO" Margin="0,0,4,4"
+                    Command="{Binding CobrarCommand}" />
+            <Button Style="{StaticResource PaymentButton}" Content="TARJETA" Margin="4,0,0,4"
+                    Command="{Binding SetMethodCommand}" CommandParameter="{x:Static enums:PaymentMethod.Card}" />
+            <Button Style="{StaticResource PaymentButton}" Content="TRANSFERENCIA" Margin="0,4,4,0"
+                    Command="{Binding SetMethodCommand}" CommandParameter="{x:Static enums:PaymentMethod.Transfer}" />
+            <Button Style="{StaticResource PaymentButton}" Content="MIXTO" Margin="4,4,0,0"
+                    Command="{Binding OpenMixedCommand}" />
+        </UniformGrid>
+
+        <!-- COBRAR -->
+        <Button Grid.Row="3" Content="COBRAR  (F8)" Height="52" FontSize="17"
+                Style="{StaticResource AccentButton}"
+                Command="{Binding CobrarCommand}" />
+    </Grid>
+</UserControl>

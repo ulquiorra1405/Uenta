@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:POS.Desktop.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800">
     <UserControl.Resources>
@@ -17,8 +18,8 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Catálogo de productos"
-                   FontSize="24" FontWeight="SemiBold" Margin="0,0,0,12" />
+        <TextBlock Grid.Row="0" Text="Catálogo de productos" Style="{StaticResource SectionTitle}"
+                   Margin="0,0,0,12" />
 
         <!-- Barra de búsqueda -->
         <Grid Grid.Row="1" Margin="0,0,0,12">
@@ -26,49 +27,264 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" VerticalContentAlignment="Center"
-                     ToolTip="Buscar por nombre, SKU o código de barras" />
+            <Grid Grid.Column="0">
+                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Padding="38,9,12,9" VerticalContentAlignment="Center"
+                         ToolTip="Buscar por nombre, SKU o código de barras (Enter para buscar)">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+                <Path Data="{StaticResource SearchIcon}" Stroke="{StaticResource TextSecondaryBrush}"
+                      StrokeThickness="2" Width="14" Height="14" Stretch="Uniform"
+                      HorizontalAlignment="Left" Margin="13,0,0,0" VerticalAlignment="Center"
+                      IsHitTestVisible="False" />
+            </Grid>
             <Button Grid.Column="1" Content="Buscar" Command="{Binding SearchCommand}"
-                    Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="16,6" />
-            <Button Grid.Column="2" Content="+ Nuevo producto" Command="{Binding NewCommand}"
-                    Margin="8,0,0,0" Padding="16,6" FontWeight="SemiBold" />
+                    Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="16,9" />
+            <Button Grid.Column="2" Content="Categorías" Command="{Binding OpenCategoryManagerCommand}"
+                    Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="16,9" />
+            <Button Grid.Column="3" Content="+ Nuevo producto" Command="{Binding NewCommand}"
+                    Margin="8,0,0,0" Padding="16,9" FontWeight="SemiBold" />
         </Grid>
 
-        <!-- Tabla de productos -->
-        <DataGrid Grid.Row="2"
-                  ItemsSource="{Binding Products}"
-                  SelectedItem="{Binding SelectedProduct}"
-                  AutoGenerateColumns="False" IsReadOnly="True"
-                  CanUserAddRows="False" CanUserDeleteRows="False"
-                  SelectionMode="Single" HeadersVisibility="Column"
-                  RowHeight="32">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="*" />
-                <DataGridTextColumn Header="SKU" Binding="{Binding Sku}" Width="100" />
-                <DataGridTextColumn Header="Categoría" Binding="{Binding CategoryName}" Width="110" />
-                <DataGridTextColumn Header="Precio (RD$)" Binding="{Binding Price.Amount, StringFormat={}{0:N2}}" Width="110" />
-                <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat={}{0:N0}}" Width="80" />
-                <DataGridTextColumn Header="Min." Binding="{Binding MinStock, StringFormat={}{0:N0}}" Width="70" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- Catálogo: misma card del área de ticketing (Surface + hairline + radius 8,
+             separación vertical 8) — consistencia entre secciones de la app. -->
+        <ListBox Grid.Row="2"
+                 ItemsSource="{Binding Products}"
+                 SelectedItem="{Binding SelectedProduct}"
+                 BorderThickness="0" Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border Background="{TemplateBinding Background}" Padding="0">
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <!-- Card idéntica a la línea del ticket (P0.2/TicketLinesView) -->
+                    <Border Padding="10,8" Margin="0,0,0,8">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                                <Setter Property="BorderThickness" Value="1" />
+                                <Setter Property="CornerRadius" Value="8" />
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Style.Triggers>
+                                    <!-- Hover: borde oscurece (sin elevación) -->
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource TextSecondaryBrush}" />
+                                    </Trigger>
+                                    <!-- Seleccionada: borde Primary (mismo patrón de foco: solo color, nunca grosor) -->
+                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Border.InputBindings>
+                            <MouseBinding MouseAction="LeftDoubleClick"
+                                          Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          CommandParameter="{Binding}" />
+                        </Border.InputBindings>
+                        <StackPanel>
+                            <!-- Fila 1: nombre/subtítulo (izq) · badge stock bajo + precio (der) -->
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock FontSize="13" FontWeight="SemiBold"
+                                               Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock FontSize="10.5" Foreground="{StaticResource TextSecondaryBrush}">
+                                        <Run Text="{Binding Sku}" />
+                                        <Run Text=" · " />
+                                        <Run Text="{Binding CategoryName}" />
+                                        <Run Text=" · " />
+                                        <Run Text="{Binding Stock, StringFormat={}{0:N0} uds}" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!-- Alerta de stock: pill ámbar "Stock bajo" (Stock ≤ Min) o rojo "Sin stock" (Stock ≤ 0) -->
+                                    <Border Background="{StaticResource WarningLightBrush}" CornerRadius="6"
+                                            Padding="7,2" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding LowStock}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Stock}" Value="0">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Stock, Converter={StaticResource NegConverter}}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock FontSize="9.5" FontWeight="Bold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Stock bajo" />
+                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Stock}" Value="0">
+                                                            <Setter Property="Text" Value="Sin stock" />
+                                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Stock, Converter={StaticResource NegConverter}}" Value="True">
+                                                            <Setter Property="Text" Value="Sin stock" />
+                                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                    <TextBlock Text="{Binding Price.Amount, StringFormat=RD$ {0:N2}}"
+                                               Style="{StaticResource MoneyText}" FontSize="14" />
+                                </StackPanel>
+                            </Grid>
 
-        <!-- Barra de acciones -->
-        <Grid Grid.Row="3" Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <Button Content="Editar" Command="{Binding EditCommand}" Padding="16,6"
-                        Style="{StaticResource SecondaryButton}" />
-                <Button Content="Desactivar" Command="{Binding DeactivateCommand}" Padding="16,6" Margin="8,0,0,0"
-                        Style="{StaticResource SecondaryButton}" Foreground="{StaticResource DangerBrush}" />
-            </StackPanel>
-            <TextBlock Grid.Column="2" Text="{Binding StatusMessage}" VerticalAlignment="Center"
-                       Foreground="{StaticResource TextSecondaryBrush}" />
-        </Grid>
+                            <!-- Fila 2: status (izq) · acciones (der) -->
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Status: dot + texto Activo/Inactivo -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="{StaticResource PrimaryBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                        <Setter Property="Fill" Value="{StaticResource TextSecondaryBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="Activo" />
+                                                <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                        <Setter Property="Text" Value="Inactivo" />
+                                                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- Acciones de fila (iconos temporales, se reemplazan por SVG) -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Style="{StaticResource IconButton}" ToolTip="Editar producto (doble clic en la fila)"
+                                            AutomationProperties.Name="EditarProducto"
+                                            Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Path Data="{StaticResource EditIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                              StrokeThickness="2" Width="12" Height="12" Stretch="Uniform" />
+                                    </Button>
+                                    <!-- Desactivar (solo activo) -->
+                                    <Button ToolTip="Desactivar producto" Margin="4,0,0,0"
+                                            AutomationProperties.Name="DesactivarProducto"
+                                            Command="{Binding DataContext.DeactivateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <Path Data="{StaticResource PowerIcon}" Stroke="{StaticResource DangerBrush}"
+                                              StrokeThickness="2" Width="12" Height="12" Stretch="Uniform" />
+                                    </Button>
+                                    <!-- Reactivar (solo inactivo) -->
+                                    <Button ToolTip="Reactivar producto" Margin="4,0,0,0"
+                                            AutomationProperties.Name="ReactivarProducto"
+                                            Command="{Binding DataContext.ReactivateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <Path Data="{StaticResource PowerIcon}" Stroke="{StaticResource PrimaryBrush}"
+                                              StrokeThickness="2" Width="12" Height="12" Stretch="Uniform" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Estado vacío (mismo patrón del ticket) -->
+        <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Products.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource MutedBrush}"
+                    HorizontalAlignment="Center">
+                <Path Data="{StaticResource GridIcon}" Stroke="{StaticResource TextSecondaryBrush}"
+                      StrokeThickness="1.6" Width="22" Height="22" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="Sin productos" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,10,0,0" />
+            <TextBlock Text="Crea tu primer producto o ajusta la búsqueda"
+                       FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Footer -->
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0,10,0,0"
+                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="11.5" />
     </Grid>
 </UserControl>

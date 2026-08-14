@@ -1,0 +1,280 @@
+<UserControl x:Class="POS.Desktop.Views.TicketLinesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:POS.Desktop.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="700">
+
+    <Grid>
+        <!-- Líneas del ticket -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding CartLines}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock FontSize="13" FontWeight="SemiBold">
+                                            <Run Text="{Binding Quantity, StringFormat={}{0:N0}×}" FontWeight="Bold" />
+                                            <Run Text=" " />
+                                            <Run Text="{Binding Name}" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="10.5" Foreground="{StaticResource TextSecondaryBrush}">
+                                            <Run Text="{Binding UnitPrice, StringFormat=RD$ {0:N2}}" />
+                                            <Run Text=" c/u" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <!-- Descuento aplicado (solo si > 0) -->
+                                        <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6"
+                                                Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasDiscount}" Value="False">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontSize="10.5" FontWeight="Bold"
+                                                       Foreground="{StaticResource PrimaryDarkBrush}"
+                                                       Text="{Binding DiscountBadgeText}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding LineTotal, StringFormat=RD$ {0:N2}}"
+                                                   Style="{StaticResource MoneyText}" FontSize="14" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                        <Button Style="{StaticResource IconButton}" ToolTip="Disminuir"
+                                                AutomationProperties.Name="DisminuirCantidad"
+                                                Command="{Binding DataContext.DecreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Path Data="{StaticResource MinusIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                                  StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
+                                        </Button>
+                                        <Button Style="{StaticResource IconButton}" ToolTip="Aumentar" Margin="4,0,0,0"
+                                                AutomationProperties.Name="AumentarCantidad"
+                                                Command="{Binding DataContext.IncreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Path Data="{StaticResource PlusIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                                  StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
+                                        </Button>
+                                        <Button Style="{StaticResource IconButton}" ToolTip="Descuento de línea" Margin="4,0,0,0"
+                                                AutomationProperties.Name="DescuentoLinea"
+                                                Command="{Binding DataContext.ToggleLineDiscountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Path Data="{StaticResource PercentIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                                  StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
+                                        </Button>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource IconButton}" ToolTip="Quitar línea"
+                                                AutomationProperties.Name="QuitarLinea"
+                                                Command="{Binding DataContext.RemoveLineCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}">
+                                            <Path Data="{StaticResource CloseIcon}" Stroke="{StaticResource DangerBrush}"
+                                                  StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Descuento inline: toggle %/RD$ + input + preview en vivo -->
+                                <Grid Margin="0,6,0,0" Visibility="{Binding IsDiscountOpen, Converter={StaticResource BoolToVis}}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Toggle del tipo de descuento (chips, accesible por teclado) -->
+                                    <UniformGrid Grid.Row="0" Grid.Column="0" Columns="2" Margin="0,0,6,0">
+                                        <Button Content="%" Margin="0,0,2,0" Padding="10,5" FontSize="12"
+                                                AutomationProperties.Name="ModoPorcentaje"
+                                                Command="{Binding SetDiscountModeCommand}"
+                                                CommandParameter="{x:Static vm:LineDiscountMode.Percent}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource PaymentButton}">
+                                                    <Setter Property="Padding" Value="10,5" />
+                                                    <Setter Property="FontSize" Value="12" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DiscountMode}" Value="{x:Static vm:LineDiscountMode.Percent}">
+                                                            <Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                                                            <Setter Property="Foreground" Value="White" />
+                                                            <Setter Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                        <Button Content="RD$" Margin="2,0,0,0" Padding="10,5" FontSize="12"
+                                                AutomationProperties.Name="ModoMonto"
+                                                Command="{Binding SetDiscountModeCommand}"
+                                                CommandParameter="{x:Static vm:LineDiscountMode.Amount}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource PaymentButton}">
+                                                    <Setter Property="Padding" Value="10,5" />
+                                                    <Setter Property="FontSize" Value="12" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DiscountMode}" Value="{x:Static vm:LineDiscountMode.Amount}">
+                                                            <Setter Property="Background" Value="{StaticResource PrimaryDarkBrush}" />
+                                                            <Setter Property="Foreground" Value="White" />
+                                                            <Setter Property="BorderBrush" Value="{StaticResource PrimaryDarkBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </UniformGrid>
+
+                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DiscountInputText, UpdateSourceTrigger=PropertyChanged}"
+                                             Padding="8,5" FontSize="12"
+                                             ToolTip="Escribe el % (ej: 5) o el monto en RD$ (ej: 30.00) según el modo"
+                                             AutomationProperties.Name="DescuentoLineaInput" />
+                                    <Button Grid.Row="0" Grid.Column="2" Content="Aplicar" Margin="6,0,0,0" Padding="12,5" FontSize="12"
+                                            Command="{Binding DataContext.ApplyLineDiscountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" AutomationProperties.Name="AplicarLinea" />
+
+                                    <!-- Preview en vivo: muestra el monto exacto antes de aplicar -->
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                               Text="{Binding DiscountPreviewText}" FontSize="11"
+                                               Foreground="{StaticResource PrimaryDarkBrush}" Margin="0,4,0,0"
+                                               HorizontalAlignment="Right" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Estado vacío del ticket (siempre visible sin líneas: el dropdown es superposición
+             fija, no empuja el layout — nada salta ni se oculta) -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CartLines.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <Border Width="52" Height="52" CornerRadius="26" Background="{StaticResource MutedBrush}"
+                    HorizontalAlignment="Center">
+                <Path Data="{StaticResource BagIcon}" Stroke="{StaticResource TextSecondaryBrush}"
+                      StrokeThickness="1.6" Width="22" Height="22" Stretch="Uniform"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="Ticket vacío" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,10,0,0" />
+            <TextBlock Text="Escanea un código, escribe un nombre o abre el catálogo (F2)"
+                       FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <!-- Dropdown de sugerencias (superposición FIJA sobre el área del ticket, anclado
+             abajo, encima de la línea de entrada: no empuja el layout, así el estado vacío
+             centrado no salta ni se oculta al escribir. Popup NO: es un HWND separado que
+             roba el foco del teclado y el Enter nunca llega a la línea) -->
+        <Border Panel.ZIndex="10" VerticalAlignment="Bottom" Margin="0,0,0,8"
+                Background="{StaticResource SurfaceBrush}" CornerRadius="8"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                Visibility="{Binding IsSuggestionsOpen, Converter={StaticResource BoolToVis}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.22" />
+            </Border.Effect>
+            <ListBox ItemsSource="{Binding EntrySuggestions}"
+                     SelectedIndex="{Binding SelectedSuggestionIndex}"
+                     BorderThickness="0" Background="Transparent"
+                     MaxHeight="280" Focusable="False"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="Focusable" Value="False" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" Background="Transparent" Padding="12,8">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <!-- Resaltado UNIFICADO: el mouse y la selección por
+                                             teclado (↑/↓) pintan el MISMO gris (MutedBrush). -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource MutedBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource MutedBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Button Background="Transparent" BorderThickness="0" Padding="0"
+                                Style="{StaticResource SuggestionButton}"
+                                Focusable="False"
+                                HorizontalContentAlignment="Stretch"
+                                AutomationProperties.Name="AgregarSugerencia"
+                                Command="{Binding DataContext.AddSuggestionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,1,0,0">
+                                        <TextBlock Text="RD$ " FontSize="11"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                        <TextBlock Text="{Binding Price, StringFormat={}{0:N2}}" FontSize="11" FontWeight="Bold"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                        <TextBlock Text=" c/u" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{StaticResource WarningLightBrush}" CornerRadius="6"
+                                        Padding="7,2" VerticalAlignment="Center"
+                                        Visibility="{Binding LowStock, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Stock bajo" FontSize="9.5" FontWeight="Bold"
+                                               Foreground="{StaticResource WarningBrush}" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+    </Grid>
+</UserControl>

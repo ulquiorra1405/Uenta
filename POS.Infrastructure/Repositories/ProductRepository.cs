@@ -15,12 +15,13 @@ public class ProductRepository : IProductRepository
         _db.Products.FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public Task<Product?> GetByBarcodeAsync(string barcode, CancellationToken ct = default) =>
-        _db.Products.FirstOrDefaultAsync(p => p.Barcode == barcode, ct);
+        _db.Products.FirstOrDefaultAsync(p => p.Barcode != null && p.Barcode.ToLower() == barcode.ToLower(), ct);
 
     public Task<Product?> GetBySkuAsync(string sku, CancellationToken ct = default) =>
-        _db.Products.FirstOrDefaultAsync(p => p.Sku == sku, ct);
+        _db.Products.FirstOrDefaultAsync(p => p.Sku != null && p.Sku.ToLower() == sku.ToLower(), ct);
 
-    public async Task<List<Product>> SearchAsync(string? term = null, CancellationToken ct = default)
+    /// <summary>Búsqueda de VENTA: solo activos (dropdown de sugerencias, catálogo popup).</summary>
+    public async Task<List<Product>> SearchActiveAsync(string? term = null, CancellationToken ct = default)
     {
         var query = _db.Products.Include(p => p.Category).AsNoTracking();
 
@@ -33,13 +34,45 @@ public class ProductRepository : IProductRepository
                  (p.Sku != null && p.Sku.ToLower().Contains(lower)) ||
                  (p.Barcode != null && p.Barcode.ToLower().Contains(lower))));
         }
+        else
+        {
+            query = query.Where(p => p.IsActive);
+        }
+
+        return await query.OrderBy(p => p.Name).ToListAsync(ct);
+    }
+
+    /// <summary>Búsqueda de GESTIÓN: todos, incluidos inactivos (para poder reactivarlos).</summary>
+    public async Task<List<Product>> SearchAllAsync(string? term = null, CancellationToken ct = default)
+    {
+        var query = _db.Products.Include(p => p.Category).AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            term = term.Trim();
+            var lower = term.ToLowerInvariant();
+            query = query.Where(p =>
+                p.Name.ToLower().Contains(lower) ||
+                (p.Sku != null && p.Sku.ToLower().Contains(lower)) ||
+                (p.Barcode != null && p.Barcode.ToLower().Contains(lower)));
+        }
 
         return await query.OrderBy(p => p.Name).ToListAsync(ct);
     }
 
     public Task<bool> ExistsBySkuAsync(string sku, long? excludeId = null, CancellationToken ct = default)
     {
-        var query = _db.Products.Where(p => p.Sku == sku && p.IsActive);
+        var lower = sku.ToLower();
+        var query = _db.Products.Where(p => p.Sku != null && p.Sku.ToLower() == lower && p.IsActive);
+        if (excludeId is long id)
+            query = query.Where(p => p.Id != id);
+        return query.AnyAsync(ct);
+    }
+
+    public Task<bool> ExistsByBarcodeAsync(string barcode, long? excludeId = null, CancellationToken ct = default)
+    {
+        var lower = barcode.ToLower();
+        var query = _db.Products.Where(p => p.Barcode != null && p.Barcode.ToLower() == lower && p.IsActive);
         if (excludeId is long id)
             query = query.Where(p => p.Id != id);
         return query.AnyAsync(ct);

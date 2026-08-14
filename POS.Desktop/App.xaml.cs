@@ -67,7 +67,17 @@ public partial class App : System.Windows.Application
 
         // Vista inicial: pantalla de venta.
         var navigation = _services.GetRequiredService<INavigationService>();
-        navigation.NavigateTo<SaleViewModel>();
+        try
+        {
+            await navigation.NavigateToAsync<SaleViewModel>();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error al iniciar la pantalla de venta:\n{ex.Message}",
+                "Uenta", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+            return;
+        }
 
         var mainWindow = _services.GetRequiredService<MainWindow>();
         mainWindow.Show();

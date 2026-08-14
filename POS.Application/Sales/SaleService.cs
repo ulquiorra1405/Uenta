@@ -12,7 +12,7 @@ namespace POS.Application.Sales;
 /// </summary>
 public class SaleService
 {
-    public const decimal ItbisRate = 0.18m;
+    public const decimal ItbisRate = CartCalculator.ItbisRate;
 
     private readonly IProductRepository _products;
     private readonly ISaleRepository _sales;
@@ -75,13 +75,14 @@ public class SaleService
         foreach (var item in items)
             gross += item.Total;
 
-        var discount = new Money(request.GlobalDiscount);
-        var total = gross - discount;
-        if (total.Amount < 0)
+        var totals = CartCalculator.ComputeTotals(gross.Amount, request.GlobalDiscount);
+        if (totals.DiscountExceedsSubtotal)
             return Result.Failure<SaleDto>("DISCOUNT_EXCEEDS_TOTAL", "El descuento global supera el total de la venta.");
 
-        var itbis = Money.Round(total.Amount * ItbisRate / (1 + ItbisRate)); // total → ITBIS (precio incluye ITBIS)
-        var baseImponible = total - itbis;
+        var total = new Money(totals.Total);
+        var itbis = new Money(totals.Itbis);
+        var baseImponible = new Money(totals.BaseImponible);
+        var discount = new Money(request.GlobalDiscount);
 
         // 5. Pagos (uno o varios → permite pago mixto)
         if (request.Payments.Count == 0)
@@ -101,10 +102,9 @@ public class SaleService
             return Result.Failure<SaleDto>("PAYMENT_INSUFFICIENT",
                 $"Faltan RD$ {Money.Round(total.Amount - paid.Amount):N2} para completar la venta.");
 
-        // 6. Persistir (stock + venta en una transacción)
+        // 6. Persistir (stock + venta en una transacción; la numeración la asigna AddAsync)
         var sale = new Sale
         {
-            Number = await _sales.GetNextNumberAsync(ct),
             CreatedAt = _clock.Now,
             UserId = request.UserId,
             CustomerId = request.CustomerId,
@@ -147,8 +147,4 @@ public class SaleService
 
         return Result.Success(dto);
     }
-
-    /// <summary>ITBIS contenido en un total que YA lo incluye (precio retail RD).</summary>
-    public static Money ItbisFromTotalIncluded(Money total) =>
-        Money.Round(total.Amount * ItbisRate / (1 + ItbisRate));
 }

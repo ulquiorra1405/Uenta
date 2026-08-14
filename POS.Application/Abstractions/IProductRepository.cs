@@ -8,11 +8,17 @@ public interface IProductRepository
     Task<Product?> GetByBarcodeAsync(string barcode, CancellationToken ct = default);
     Task<Product?> GetBySkuAsync(string sku, CancellationToken ct = default);
 
-    /// <summary>Lista productos activos (opcionalmente filtrados por término).</summary>
-    Task<List<Product>> SearchAsync(string? term = null, CancellationToken ct = default);
+    /// <summary>Lista productos ACTIVOS (venta: dropdown de sugerencias, catálogo popup), filtrados por término.</summary>
+    Task<List<Product>> SearchActiveAsync(string? term = null, CancellationToken ct = default);
 
-    /// <summary>True si existe otro producto activo con el mismo SKU (excluyendo el indicado).</summary>
+    /// <summary>Lista TODOS los productos (gestión de catálogo, incluye inactivos), filtrados por término.</summary>
+    Task<List<Product>> SearchAllAsync(string? term = null, CancellationToken ct = default);
+
+    /// <summary>True si existe otro producto activo con el mismo SKU (excluyendo el indicado). Case-insensitive.</summary>
     Task<bool> ExistsBySkuAsync(string sku, long? excludeId = null, CancellationToken ct = default);
+
+    /// <summary>True si existe otro producto activo con el mismo código de barras (excluyendo el indicado). Case-insensitive.</summary>
+    Task<bool> ExistsByBarcodeAsync(string barcode, long? excludeId = null, CancellationToken ct = default);
 
     Task AddAsync(Product product, CancellationToken ct = default);
 

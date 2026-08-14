@@ -45,7 +45,7 @@ public partial class CartLineViewModel : ObservableObject
     private string _discountInputText = string.Empty;
 
     /// <summary>Total bruto de la línea (precio × cantidad, sin descuento).</summary>
-    public decimal LineGross => Math.Round(UnitPrice * Quantity, 2, MidpointRounding.AwayFromZero);
+    public decimal LineGross => CartCalculator.LineGross(UnitPrice, Quantity);
 
     /// <summary>
     /// Monto efectivo de descuento: en % sigue a la cantidad (10 items → 500, 5 → 250);
@@ -56,15 +56,12 @@ public partial class CartLineViewModel : ObservableObject
         get
         {
             if (DiscountMode == LineDiscountMode.Percent)
-            {
-                var d = Math.Round(LineGross * DiscountPercent / 100m, 2, MidpointRounding.AwayFromZero);
-                return Math.Min(d, LineGross);
-            }
-            return Math.Min(FixedDiscount, LineGross);
+                return CartCalculator.LineDiscountByPercent(LineGross, DiscountPercent);
+            return CartCalculator.LineDiscountByAmount(LineGross, FixedDiscount);
         }
     }
 
-    public decimal LineTotal => Math.Round(LineGross - LineDiscount, 2, MidpointRounding.AwayFromZero);
+    public decimal LineTotal => CartCalculator.LineTotal(UnitPrice, Quantity, LineDiscount);
 
     public bool HasDiscount => LineDiscount > 0;
 
@@ -144,13 +141,13 @@ public partial class CartLineViewModel : ObservableObject
         {
             if (DiscountMode == LineDiscountMode.Percent)
             {
-                var pct = Math.Clamp(v, 0, 100);
-                var d = Math.Round(LineGross * pct / 100m, 2, MidpointRounding.AwayFromZero);
-                DiscountPreviewText = $"-RD$ {Math.Min(d, LineGross):N2}";
+                var d = CartCalculator.LineDiscountByPercent(LineGross, v);
+                DiscountPreviewText = $"-RD$ {d:N2}";
             }
             else
             {
-                DiscountPreviewText = $"-RD$ {Math.Min(v, LineGross):N2}";
+                var d = CartCalculator.LineDiscountByAmount(LineGross, v);
+                DiscountPreviewText = $"-RD$ {d:N2}";
             }
         }
         else
@@ -266,7 +263,7 @@ public partial class SaleViewModel : ViewModelBase
             return;
         }
 
-        var results = await _productService.SearchAsync(term, token);
+        var results = await _productService.SearchActiveAsync(term, token);
         if (token.IsCancellationRequested) return;
 
         // Match EXACTO de código (SKU/barcode) → se rellena sola (loop de escáner).
@@ -477,7 +474,7 @@ public partial class SaleViewModel : ViewModelBase
         try
         {
             IsCatalogBusy = true;
-            var all = await _productService.SearchAsync(CatalogSearchText.Trim());
+            var all = await _productService.SearchActiveAsync(CatalogSearchText.Trim());
             Products.Clear();
 
             var selected = CategoryFilters.FirstOrDefault(f => f.IsSelected);
@@ -628,17 +625,12 @@ public partial class SaleViewModel : ViewModelBase
         {
             Subtotal = CartLines.Sum(l => l.LineTotal);
 
-            // Descuento global: monto fijo prometido por el cajero — NUNCA se muta solo.
-            // Si supera el subtotal, se avisa y se bloquea COBRAR hasta ajustarlo
-            // (validación honesta, no auto-ajuste silencioso).
-            GlobalDiscountExceedsSubtotal = GlobalDiscount > Subtotal;
-
-            var total = Math.Round(Subtotal - GlobalDiscount, 2, MidpointRounding.AwayFromZero);
-            if (total < 0) total = 0;
-            Total = total;
-
-            // ITBIS 18% incluido en el precio (retail RD): total → base imponible + ITBIS.
-            Itbis = Math.Round(total * SaleService.ItbisRate / (1 + SaleService.ItbisRate), 2, MidpointRounding.AwayFromZero);
+            // Totales y desglose ITBIS: misma fuente de verdad que SaleService (CartCalculator),
+            // así el preview del ticket coincide por construcción con la venta persistida.
+            var totals = CartCalculator.ComputeTotals(Subtotal, GlobalDiscount);
+            GlobalDiscountExceedsSubtotal = totals.DiscountExceedsSubtotal;
+            Total = totals.Total;
+            Itbis = totals.Itbis;
 
             HasLowStockWarnings = CartLines.Any(l => l.LowStock);
 
@@ -868,7 +860,7 @@ public partial class SaleViewModel : ViewModelBase
     {
         try
         {
-            var categories = await _categoryService.GetAllAsync();
+            var categories = await _categoryService.GetAllActiveAsync();
             CategoryFilters.Clear();
             CategoryFilters.Add(new CategoryFilterItem { Name = "TODOS", IsSelected = true });
             foreach (var c in categories)

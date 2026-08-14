@@ -1,0 +1,60 @@
+<UserControl x:Class="POS.Desktop.Views.ResultModalView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:beh="clr-namespace:POS.Desktop.Behaviors"
+             mc:Ignorable="d"
+             d:DesignHeight="420" d:DesignWidth="460">
+
+    <Grid Style="{StaticResource OverlayScrim}"
+          beh:OverlayAnimator.IsOpen="{Binding IsResultOpen}">
+        <Grid.InputBindings>
+            <KeyBinding Key="Enter" Command="{Binding NewSaleCommand}" />
+        </Grid.InputBindings>
+        <Border Style="{StaticResource DialogSurface}" Width="460"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28">
+            <StackPanel>
+                <Border Width="56" Height="56" CornerRadius="28" Background="{StaticResource PrimaryLightBrush}"
+                        HorizontalAlignment="Center" Margin="0,0,0,12">
+                    <Path Data="{StaticResource CheckIcon}" Stroke="{StaticResource PrimaryBrush}"
+                          StrokeThickness="3" Width="24" Height="24" Stretch="Uniform"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock Text="Venta completada" Style="{StaticResource SectionTitle}"
+                           HorizontalAlignment="Center" />
+                <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,2,0,14">
+                    <Run Text="Venta #" /><Run Text="{Binding LastSale.Number, StringFormat={}{0}}" />
+                    <Run Text=" · " />
+                    <Run Text="{Binding LastSale.CreatedAt, StringFormat=HH:mm}" />
+                </TextBlock>
+
+                <TextBlock HorizontalAlignment="Center" FontSize="30" FontWeight="Bold"
+                           FontFamily="{StaticResource DisplayFont}" Margin="0,0,0,4">
+                    <Run Text="RD$ " /><Run Text="{Binding LastSale.Total.Amount, StringFormat={}{0:N2}}" />
+                </TextBlock>
+                <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}">
+                    <Run Text="Vuelto: RD$ " /><Run Text="{Binding ChangeAmount, StringFormat={}{0:N2}}" />
+                </TextBlock>
+
+                <!-- Warnings (stock negativo) -->
+                <ItemsControl ItemsSource="{Binding LastSale.Warnings}" Margin="0,12,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource WarningLightBrush}" CornerRadius="6"
+                                    Padding="8,6" Margin="0,0,0,4">
+                                <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource WarningBrush}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Button Content="Nueva venta  (Enter)" Height="46" FontSize="15" Margin="0,18,0,0"
+                        Command="{Binding NewSaleCommand}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

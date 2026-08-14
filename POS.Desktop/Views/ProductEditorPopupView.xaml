@@ -1,0 +1,24 @@
+<UserControl x:Class="POS.Desktop.Views.ProductEditorPopupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:views="clr-namespace:POS.Desktop.Views"
+             xmlns:beh="clr-namespace:POS.Desktop.Behaviors"
+             mc:Ignorable="d"
+             d:DesignHeight="640" d:DesignWidth="560">
+
+    <!-- Overlay global: editor de producto (crear/editar/duplicar).
+         Vive en el MainWindow para que su scrim cubra sidebar + vista.
+         El DataContext del editor es Editor (popup); el scrim cierra todo. -->
+    <Grid Style="{StaticResource OverlayScrim}"
+          beh:OverlayAnimator.IsOpen="{Binding IsProductEditorOpen}">
+        <Border Style="{StaticResource DialogSurface}"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                MinWidth="520" MaxWidth="560" MaxHeight="640">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <views:ProductEditView DataContext="{Binding Editor}" />
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

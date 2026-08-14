@@ -177,6 +177,84 @@ public class SaleServiceTests : IDisposable
         Assert.Equal(50m, sale.Discount.Amount);
     }
 
+    /// <summary>
+    /// PARIDAD: lo que el ticket del cajero calcula (CartCalculator) es EXACTAMENTE
+    /// lo que se persiste (SaleService). Ambos usan la misma fuente de verdad — si
+    /// algún día divergen, este test lo detecta.
+    /// </summary>
+    [Fact]
+    public async Task CrearVenta_TotalesCoincidenConPreviewDelCart()
+    {
+        var cafe = await SeedProductAsync("Café", price: 100m);
+        var pan = await SeedProductAsync("Pan", price: 25m);
+
+        // Carrito con descuentos de línea y global (mismos que mandaría el ViewModel).
+        var line1Gross = CartCalculator.LineGross(100m, 2);
+        var line1Discount = CartCalculator.LineDiscountByPercent(line1Gross, 10); // -20
+        var line2Gross = CartCalculator.LineGross(25m, 4);
+        var line2Discount = CartCalculator.LineDiscountByAmount(line2Gross, 10);  // -10
+        var subtotalNet = CartCalculator.LineTotal(100m, 2, line1Discount)
+                        + CartCalculator.LineTotal(25m, 4, line2Discount);        // 180 + 90 = 270
+        var expected = CartCalculator.ComputeTotals(subtotalNet, globalDiscount: 20m); // 250
+
+        var request = new CreateSaleRequest
+        {
+            UserId = 1,
+            Items =
+            [
+                new SaleItemRequest { ProductId = cafe.Id, Quantity = 2, UnitPrice = 100m, LineDiscount = line1Discount },
+                new SaleItemRequest { ProductId = pan.Id, Quantity = 4, UnitPrice = 25m, LineDiscount = line2Discount }
+            ],
+            GlobalDiscount = 20m,
+            Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = expected.Total }]
+        };
+
+        var result = await _saleService.CreateSaleAsync(request);
+
+        Assert.True(result.IsSuccess);
+        var sale = result.Value!;
+        Assert.Equal(expected.Total, sale.Total.Amount);
+        Assert.Equal(expected.Itbis, sale.Itbis.Amount);
+        Assert.Equal(expected.BaseImponible, sale.Subtotal.Amount);
+        Assert.Equal(20m, sale.Discount.Amount);
+    }
+
+    [Fact]
+    public async Task CrearVenta_NumeracionConsecutiva_Y_VentaFallidaNoQuemaNumero()
+    {
+        var product = await SeedProductAsync();
+
+        // 1ª venta válida → número 1
+        var ok1 = await _saleService.CreateSaleAsync(new CreateSaleRequest
+        {
+            UserId = 1,
+            Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
+            Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
+        });
+        Assert.True(ok1.IsSuccess);
+        Assert.Equal(1, ok1.Value!.Number);
+
+        // Venta inválida (descuento global supera total) → falla ANTES de persistir
+        var bad = await _saleService.CreateSaleAsync(new CreateSaleRequest
+        {
+            UserId = 1,
+            Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
+            GlobalDiscount = 500m,
+            Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
+        });
+        Assert.True(bad.IsFailure);
+
+        // Siguiente venta válida → número 2 (consecutivo, sin hueco)
+        var ok2 = await _saleService.CreateSaleAsync(new CreateSaleRequest
+        {
+            UserId = 1,
+            Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
+            Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
+        });
+        Assert.True(ok2.IsSuccess);
+        Assert.Equal(2, ok2.Value!.Number);
+    }
+
     /// <summary>Demo visible: vende 2 productos y "imprime" el recibo (consola).</summary>
     [Fact]
     public async Task Demo_VentaCompleta_ImprimeRecibo()

@@ -11,15 +11,33 @@ public class SaleRepository : ISaleRepository
 
     public SaleRepository(PosDbContext db) => _db = db;
 
-    public async Task<long> GetNextNumberAsync(CancellationToken ct = default) =>
-        (await _db.Sales.MaxAsync(s => (long?)s.Number, ct) ?? 0) + 1;
-
-    /// <summary>Persiste la venta y TODOS los cambios pendientes del contexto
-    /// (incluye el stock descontado en los productos) en una sola transacción.</summary>
+    /// <summary>
+    /// Persiste la venta en una transacción junto con la numeración atómica
+    /// (UPSERT+RETURNING sobre la tabla Sequences) y TODOS los cambios pendientes
+    /// del contexto (incluye el stock descontado en los productos). Si algo falla,
+    /// se revierte todo y NO se quema un número de recibo.
+    /// </summary>
     public async Task<long> AddAsync(Sale sale, CancellationToken ct = default)
     {
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        // Incremento atómico: SQLite serializa los escritores; RETURNING devuelve
+        // el nuevo valor sin condición de carrera (a diferencia de MaxAsync + 1).
+        var sql = """
+            INSERT INTO Sequences(Id, LastNumber) VALUES (1, 1)
+            ON CONFLICT(Id) DO UPDATE SET LastNumber = LastNumber + 1
+            RETURNING LastNumber;
+            """;
+        var numbers = await _db.Database
+            .SqlQueryRaw<long>(sql)
+            .ToListAsync(ct);
+
+        sale.Number = numbers.Single();
+
         _db.Sales.Add(sale);
-        await _db.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync(ct); // venta + stock pendiente, dentro de la transacción
+        await tx.CommitAsync(ct);
+
         return sale.Id;
     }
 }

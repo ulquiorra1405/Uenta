@@ -1,0 +1,155 @@
+<UserControl x:Class="POS.Desktop.Views.PaymentModalView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:enums="clr-namespace:POS.Domain.Enums;assembly=POS.Domain"
+             xmlns:beh="clr-namespace:POS.Desktop.Behaviors"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="480">
+
+    <UserControl.InputBindings>
+        <!-- Vive en el MainWindow (fuera de SaleView): los atajos van aquí, no en la vista. -->
+        <KeyBinding Key="Escape" Command="{Binding CancelOverlayCommand}" />
+        <KeyBinding Key="F9" Command="{Binding SetExactAmountCommand}" />
+    </UserControl.InputBindings>
+
+    <Grid Style="{StaticResource OverlayScrim}"
+          beh:OverlayAnimator.IsOpen="{Binding IsPaymentOpen}">
+        <Border Style="{StaticResource DialogSurface}" Width="480"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+            <StackPanel>
+                <TextBlock Text="Cobrar venta" Style="{StaticResource SectionTitle}" Margin="0,0,0,2" />
+                <TextBlock FontSize="32" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
+                           Margin="0,0,0,16">
+                    <Run Text="RD$ " /><Run Text="{Binding Total, StringFormat={}{0:N2}}" />
+                </TextBlock>
+
+                <!-- Selector de método -->
+                <UniformGrid Columns="4" Margin="0,0,0,16">
+                    <Button Style="{StaticResource MethodChipCash}" Content="Efectivo" Margin="0,0,4,0"
+                            Command="{Binding SetMethodCommand}" CommandParameter="{x:Static enums:PaymentMethod.Cash}" />
+                    <Button Style="{StaticResource MethodChipCard}" Content="Tarjeta" Margin="0,0,4,0"
+                            Command="{Binding SetMethodCommand}" CommandParameter="{x:Static enums:PaymentMethod.Card}" />
+                    <Button Style="{StaticResource MethodChipTransfer}" Content="Transf." Margin="0,0,4,0"
+                            Command="{Binding SetMethodCommand}" CommandParameter="{x:Static enums:PaymentMethod.Transfer}" />
+                    <ToggleButton Style="{StaticResource CategoryChip}" Content="Mixto"
+                                  IsChecked="{Binding IsMixed}" />
+                </UniformGrid>
+
+                <!-- Efectivo -->
+                <StackPanel Visibility="{Binding IsMixed, Converter={StaticResource InverseBoolToVis}}">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedMethod}" Value="Card">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SelectedMethod}" Value="Transfer">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="Monto recibido" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding ReceivedText, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="20" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
+                                 Padding="12,9" ToolTip="Monto recibido del cliente (F9 = exacto)" />
+<Button Grid.Column="1" Content="Exacto (F9)" Margin="6,0,0,0"
+                        Style="{StaticResource SecondaryButton}"
+                        Command="{Binding SetExactAmountCommand}" />
+                    </Grid>
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="VUELTO" FontSize="13" FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding ChangeAmount, StringFormat=RD$ {0:N2}}"
+                                   FontSize="22" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
+                                   Foreground="{StaticResource PrimaryBrush}" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- Tarjeta / Transferencia -->
+                <StackPanel>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedMethod}" Value="Card">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding SelectedMethod}" Value="Transfer">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Border Background="{StaticResource MutedBrush}" CornerRadius="8" Padding="12,10">
+                        <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}">
+                            <Run Text="Cobre " /><Run Text="{Binding Total, StringFormat=RD$ {0:N2}}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" />
+                            <Run Text=" en el datáfono y confirme. El monto se registra manualmente." />
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+
+                <!-- Mixto -->
+                <StackPanel Visibility="{Binding IsMixed, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Efectivo" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding MixedCashText, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="18" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
+                             Padding="12,9" Margin="0,4,0,8" ToolTip="Monto a cobrar en efectivo" />
+                    <TextBlock Text="Resto en" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <UniformGrid Columns="2" Margin="0,4,0,8">
+                        <ToggleButton Style="{StaticResource CategoryChip}" Content="Tarjeta" Margin="0,0,4,0"
+                                      IsChecked="{Binding MixedRemainderMethod, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Card}" />
+                        <ToggleButton Style="{StaticResource CategoryChip}" Content="Transferencia"
+                                      IsChecked="{Binding MixedRemainderMethod, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Transfer}" />
+                    </UniformGrid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Resto a cobrar" FontSize="12.5"
+                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" FontSize="16" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}">
+                            <Run Text="RD$ " />
+                            <Run Text="{Binding Total, StringFormat={}{0:N2}}" />
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Error -->
+                <Border Background="{StaticResource DangerLightBrush}" CornerRadius="6" Padding="10,8" Margin="0,12,0,0"
+                        Visibility="{Binding PaymentError, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding PaymentError}" FontSize="12" Foreground="{StaticResource DangerBrush}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Acciones -->
+                <Grid Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Style="{StaticResource SecondaryButton}" Content="Cancelar"
+                            Command="{Binding ClosePaymentCommand}" />
+                    <Button Grid.Column="1" Margin="8,0,0,0" Content="Confirmar pago"
+                            Style="{StaticResource AccentButton}"
+                            Command="{Binding ConfirmPaymentCommand}" />
+                </Grid>
+                <TextBlock Text="Procesando…" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,8,0,0"
+                           Visibility="{Binding IsProcessing, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -3,16 +3,38 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:local="clr-namespace:POS.Desktop"
+        xmlns:views="clr-namespace:POS.Desktop.Views"
         mc:Ignorable="d"
         Title="Uenta — Punto de Venta" Height="800" Width="1280"
         WindowStartupLocation="CenterScreen" WindowState="Maximized"
-        MinHeight="700" MinWidth="1100">
+        MinHeight="700" MinWidth="1100"
+        WindowStyle="None" ResizeMode="CanResize">
+
+    <!-- Barra de título propia (control total de color → preparada para modo noche).
+         WindowChrome conserva el comportamiento nativo: drag, resize, Aero Snap,
+         doble clic para maximizar/restaurar. -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="44"
+                            CornerRadius="0"
+                            ResizeBorderThickness="6"
+                            GlassFrameThickness="0,0,0,1"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <!-- Botón de navegación del sidebar (estilo Swiss):
-             activo = fondo suave + texto/icono verde + barra izquierda 3px PrimaryBrush.
-             Hover = fondo MutedBrush · Press = PrimaryLightBrush · Foco = ring. -->
+        <!-- Logo Uenta (ico.svg → Geometry inline; WPF no renderiza SVG nativo).
+             Regla: sin dependencias SVG, como el resto de iconos del proyecto. -->
+        <Geometry x:Key="LogoGeometry">
+            M180 91h46c.08 23.357.08 23.357.098 33.393.012 6.82.026 13.64.053 20.46q.032 8.258.039 16.514.004 3.135.021 6.268c.153 30.576-5.862 55.672-27.774 78.365-17.504 17.45-40.517 25.096-64.875 25.438-13.918-.07-27.268-2.757-39.562-9.438l-2.91-1.488C82.9 256.084 76.535 250.526 70 244l-2.473-2.437c-16.14-16.833-23.117-39.668-22.82-62.618l.013-3.84q.022-4.977.074-9.953c.031-3.406.045-6.812.06-10.218.03-6.645.089-13.29.146-19.934h45l.113 10.734q.071 5.199.15 10.396.049 3.588.083 7.175c.034 3.456.087 6.911.142 10.367l.02 3.193c.282 14.568 4.03 26.15 13.996 36.803 8.571 8.008 18.636 11.92 30.246 11.832l2.666-.017C144.792 225.28 150.6 223.78 157 220l2.7-1.54c10.13-6.39 15.6-15.996 18.836-27.337.475-2.171.602-4.104.622-6.324l.03-2.516.017-2.733.03-2.898q.047-4.74.081-9.48l.063-6.575q.083-8.65.153-17.3.092-10.38.19-20.76c.098-10.513.187-21.025.278-31.537 M73 73h42v41H73z M29 64h30v29H29z M73 28h28v28H73z
+        </Geometry>
+        <!-- Botón de navegación del sidebar (estilo Swiss).
+             TODO el estado activo vive en el template (un solo hogar):
+             activo = fondo PrimaryLight + texto PrimaryDark + barra izquierda 3px PrimaryBrush.
+             El botón SOLO marca SidebarNav.IsActive=True (sin duplicar Background/Foreground).
+             Precedencia: hover → pressed → foco → ACTIVO (el último gana).
+             Borde SIEMPRE 1px (transparente en reposo): el foco solo cambia color, nunca grosor. -->
         <Style x:Key="SidebarNavButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
@@ -21,6 +43,8 @@
             <Setter Property="Margin" Value="0,2" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -34,6 +58,8 @@
                                     Background="Transparent" CornerRadius="0,2,2,0" Margin="0,5,0,5" />
                             <Border x:Name="Chrome" Grid.Column="1"
                                     Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="6"
                                     Padding="{TemplateBinding Padding}">
                                 <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -41,20 +67,23 @@
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Activo (lo marca el Style de cada botón vía SidebarNav.IsActive) -->
-                            <DataTrigger Binding="{Binding (local:SidebarNav.IsActive), RelativeSource={RelativeSource TemplatedParent}}" Value="True">
-                                <Setter TargetName="Indicator" Property="Background" Value="{StaticResource PrimaryBrush}" />
-                            </DataTrigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Chrome" Property="Background" Value="{StaticResource MutedBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource BorderBrush}" />
                             </Trigger>
+                            <!-- Foco: solo color, nunca grosor (borde ya es 1px fijo) -->
                             <Trigger Property="IsKeyboardFocused" Value="True">
                                 <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-                                <Setter TargetName="Chrome" Property="BorderThickness" Value="1" />
                             </Trigger>
+                            <!-- ACTIVO (último = mayor precedencia; prevalece sobre hover/foco) -->
+                            <DataTrigger Binding="{Binding (local:SidebarNav.IsActive), RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                <Setter TargetName="Indicator" Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PrimaryLightBrush}" />
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
+                            </DataTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -71,19 +100,141 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <!-- Fila única que llena la ventana (sin esto, Auto se estira al contenido y el sidebar se sale por abajo) -->
+            <!-- Barra de título propia (44px) -->
+            <RowDefinition Height="44" />
+            <!-- Contenido (sidebar + vista activa) -->
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <!-- Auto: el Border del sidebar define el ancho (210 expandido / 64 solo iconos) -->
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
 
-        <!-- Sidebar (claro, igual paleta que el resto) -->
-        <Border Grid.Column="0" Width="{Binding SidebarWidth}"
-                Background="{StaticResource SurfaceBrush}"
-                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+        <!-- ─── Barra de título propia ─── -->
+        <Border Grid.Row="0" Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Acciones de barra: toggle sidebar + settings (futuro).
+                     El logo/Sección se quitó: el sidebar siempre muestra el mark Uenta
+                     y cada pantalla tiene su propio título. -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                    <Button AutomationProperties.Name="Colapsar panel"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Command="{Binding ToggleSidebarCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource TitleBarButton}">
+                                <Setter Property="ToolTip" Value="Colapsar panel" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
+                                        <Setter Property="ToolTip" Value="Expandir panel" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Path Data="{StaticResource PanelIcon}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
+                    </Button>
+                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Configuración (próximamente)"
+                            AutomationProperties.Name="Configuración"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Path Data="{StaticResource SettingsIcon}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
+                    </Button>
+                </StackPanel>
+
+                <!-- Reloj (siempre visible; vivía en el header de venta) -->
+                <TextBlock Grid.Column="1" Text="{Binding ClockText}" FontSize="12.5"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                <!-- Grupo de sesión: caja + cajero (siempre visible, antes de los controles).
+                     Demo hasta P2.1; entonces pasará a botones con IsHitTestVisibleInChrome. -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6"
+                            Padding="10,4" Margin="0,0,4,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="{StaticResource PrimaryBrush}" Margin="0,0,6,0"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="Caja abierta (demo)" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource PrimaryDarkBrush}" />
+                        </StackPanel>
+                    </Border>
+                    <Border Width="28" Height="28" CornerRadius="14" Background="{StaticResource PrimaryBrush}"
+                            Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="C" Foreground="White" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="Cajero demo" Margin="8,0,20,0" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    <Border Width="1" Height="20" Background="{StaticResource BorderBrush}" Margin="0,0,4,0"
+                            VerticalAlignment="Center" />
+
+                    <!-- Botones de control de ventana -->
+                    <StackPanel Orientation="Horizontal"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource TitleBarButton}" ToolTip="Minimizar"
+                                AutomationProperties.Name="Minimizar"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                Click="Minimize_Click">
+                            <Path Data="{StaticResource MinimizeIcon}"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.5" Width="12" Height="12" Stretch="Uniform" />
+                        </Button>
+                        <Button Style="{StaticResource TitleBarButton}" ToolTip="Maximizar" x:Name="MaxRestoreButton"
+                                AutomationProperties.Name="MaximizarRestaurar"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                Click="MaximizeRestore_Click">
+                            <Path x:Name="MaxRestoreIcon" Data="{StaticResource MaximizeIcon}"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.5" Width="12" Height="12" Stretch="Uniform" />
+                        </Button>
+                        <Button Style="{StaticResource TitleBarCloseButton}" ToolTip="Cerrar"
+                                AutomationProperties.Name="Cerrar"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                                Click="Close_Click">
+                            <Path Data="{StaticResource CloseIcon}"
+                                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                  StrokeThickness="1.5" Width="12" Height="12" Stretch="Uniform" />
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Contenido: sidebar + vista activa -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <!-- Fila única que llena la ventana (sin esto, Auto se estira al contenido y el sidebar se sale por abajo) -->
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <!-- Auto: el Border del sidebar define el ancho (210 expandido / 64 solo iconos) -->
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+        <!-- Sidebar (claro, igual paleta que el resto). Con overlay abierto se "funde"
+             con el scrim: mismo fondo que la vista y sin borde derecho → el scrim (un
+             solo Grid sobre todo) se ve continuo, sin línea en la frontera. -->
+        <Border Grid.Column="0" Width="{Binding SidebarWidth}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                    <Setter Property="BorderThickness" Value="0,0,1,0" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsAnyOverlayOpen}" Value="True">
+                            <Setter Property="Background" Value="{StaticResource BackgroundBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource BackgroundBrush}" />
+                            <Setter Property="BorderThickness" Value="0" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -91,88 +242,127 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Logo -->
-                <TextBlock Text="UENTA" FontSize="26" FontWeight="Bold"
-                           Foreground="{StaticResource PrimaryBrush}" Margin="20,24,0,24"
-                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
-
-                <!-- Navegación -->
-                <StackPanel Grid.Row="1" Margin="8,0">
-                    <Button Command="{Binding GoCatalogCommand}" ToolTip="Catálogo"
-                            AutomationProperties.Name="Catálogo">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsCatalogActive}" Value="True">
-                                        <Setter Property="local:SidebarNav.IsActive" Value="True" />
-                                        <Setter Property="Background" Value="{StaticResource MutedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE8A9;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="Catálogo" Margin="12,0,0,0" VerticalAlignment="Center"
-                                       Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
-                        </StackPanel>
-                    </Button>
-
-                    <Button Command="{Binding GoSalesCommand}" ToolTip="Ventas"
-                            AutomationProperties.Name="Ventas">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsSalesActive}" Value="True">
-                                        <Setter Property="local:SidebarNav.IsActive" Value="True" />
-                                        <Setter Property="Background" Value="{StaticResource MutedBrush}" />
-                                        <Setter Property="Foreground" Value="{StaticResource PrimaryDarkBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE7BF;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="Ventas" Margin="12,0,0,0" VerticalAlignment="Center"
-                                       Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-
-                <!-- Colapsar / expandir -->
-                <Button Grid.Row="2" Command="{Binding ToggleSidebarCommand}" Margin="8,0,8,12"
-                        AutomationProperties.Name="Colapsar panel">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                <!-- Logo: mark (ico.svg) + nombre. Colapsado = solo mark centrado. -->
+                <StackPanel Orientation="Horizontal" Margin="16,22,16,20">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="HorizontalAlignment" Value="Left" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
-                                    <Setter Property="ToolTip" Value="Expandir panel" />
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </Button.Style>
-                    <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="14"
-                               Foreground="{StaticResource TextSecondaryBrush}">
-                        <!-- El Text por defecto vive en el Style (no como valor local), para que el DataTrigger pueda cambiarlo -->
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Text" Value="&#xE76B;" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsSidebarCollapsed}" Value="True">
-                                        <Setter Property="Text" Value="&#xE76C;" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Button>
+                    </StackPanel.Style>
+                    <Path Data="{StaticResource LogoGeometry}" Fill="{StaticResource PrimaryBrush}"
+                          Width="26" Height="31" Stretch="Uniform"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <TextBlock Text="UENTA" FontSize="18" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Margin="10,0,0,0" VerticalAlignment="Center"
+                               FontFamily="{StaticResource DisplayFont}"
+                               Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                </StackPanel>
+
+                <!-- Navegación (ScrollViewer: blindado para cuando crezca con P2.1/P3.x) -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="8,0,8,8">
+
+                        <!-- Grupo: OPERACIÓN -->
+                        <TextBlock Text="OPERACIÓN" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="14,4,0,6"
+                                   Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+
+                        <Button Command="{Binding GoSalesCommand}" ToolTip="Ventas"
+                                AutomationProperties.Name="Ventas">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSalesActive}" Value="True">
+                                            <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource BagIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                      StrokeThickness="1.8" Width="17" Height="17" Stretch="Uniform"
+                                      VerticalAlignment="Center" />
+                                <TextBlock Text="Ventas" Margin="12,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Grupo: GESTIÓN -->
+                        <TextBlock Text="GESTIÓN" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="14,14,0,6"
+                                   Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+
+                        <Button Command="{Binding GoCatalogCommand}" ToolTip="Catálogo"
+                                AutomationProperties.Name="Catálogo">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCatalogActive}" Value="True">
+                                            <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource GridIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                      StrokeThickness="1.8" Width="17" Height="17" Stretch="Uniform"
+                                      VerticalAlignment="Center" />
+                                <TextBlock Text="Catálogo" Margin="12,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Footer: sesión/caja (demo; P2.1 conecta a usuario real).
+                     El toggle del sidebar vive ahora en la barra de título. -->
+                <StackPanel Grid.Row="2" Margin="8,0">
+                    <Border Height="1" Background="{StaticResource BorderBrush}" Margin="6,0,6,10" />
+
+                    <StackPanel Orientation="Horizontal" Margin="12,0,0,12"
+                                Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}">
+                        <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource PrimaryBrush}"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="C" Foreground="White" FontWeight="Bold" FontSize="13"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="Cajero demo" FontSize="12.5" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}" Margin="0,0,5,0"
+                                         VerticalAlignment="Center" />
+                                <TextBlock Text="Caja abierta" FontSize="10.5"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
             </Grid>
         </Border>
 
         <!-- Contenido (el DataTemplate elige la vista según el ViewModel actual) -->
         <ContentControl Grid.Column="1" Content="{Binding Current}"
                         HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+
+        <!-- Overlays globales (popups modales). Viven aquí, a nivel del MainWindow, para que
+             su scrim cubra TODO (sidebar + vista) con UNA sola pieza de color — si vivieran
+             dentro de la vista, el sidebar quedaría sin oscurecer o con un scrim separado
+             (línea visible entre ambos). DataContext = Current: cada popup bindea los flags
+             IsXxxOpen del VM activo (y queda colapsado cuando la vista no es la suya). -->
+        <views:CatalogPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <views:PaymentModalView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <views:ResultModalView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <views:CategoryManagerPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <views:ProductEditorPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        </Grid>
     </Grid>
 </Window>

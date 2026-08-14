@@ -14,6 +14,7 @@ public class PosDbContext : DbContext
     public DbSet<Sale> Sales => Set<Sale>();
     public DbSet<SaleItem> SaleItems => Set<SaleItem>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Sequence> Sequences => Set<Sequence>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +62,13 @@ public class PosDbContext : DbContext
         {
             e.Property(p => p.Method).HasConversion<int>();
             e.Property(p => p.Amount).HasConversion(money).HasColumnType("decimal(18,2)");
+        });
+
+        modelBuilder.Entity<Sequence>(e =>
+        {
+            e.ToTable("Sequences");
+            e.HasKey(s => s.Id);
+            e.Property(s => s.LastNumber).IsRequired();
         });
     }
 }
