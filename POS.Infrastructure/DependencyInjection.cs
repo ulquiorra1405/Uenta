@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
+        services.AddScoped<IStockMovementRepository, StockMovementRepository>();
         services.AddScoped<IClock, SystemClock>();
         services.AddScoped<IReceiptPrinter, ConsoleReceiptPrinter>();
 

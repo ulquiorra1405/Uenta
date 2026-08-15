@@ -84,6 +84,8 @@ public class ProductService
         product.CategoryId = request.CategoryId;
         product.Price = new Money(request.Price);
         product.Cost = new Money(request.Cost);
+        // Nota: el stock NO se edita aquí (P3.2). El stock solo cambia por movimientos
+        // de inventario (InventoryService.AdjustStockAsync), para dejar auditoría.
         product.MinStock = request.MinStock;
         product.IsActive = request.IsActive;
 

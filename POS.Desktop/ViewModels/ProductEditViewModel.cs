@@ -2,8 +2,12 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using POS.Application.Products;
+using POS.Domain.Enums;
 
 namespace POS.Desktop.ViewModels;
+
+/// <summary>Opción del selector de tipo de movimiento (P3.2).</summary>
+public record StockAdjustOption(StockMovementType Value, string Label);
 
 /// <summary>
 /// Editor de producto (popup overlay, no pantalla de navegación).
@@ -12,16 +16,23 @@ namespace POS.Desktop.ViewModels;
 /// </summary>
 public partial class ProductEditViewModel : ViewModelBase
 {
+    private const long DemoUserId = 1;
+
     private readonly ProductService _productService;
     private readonly CategoryService _categoryService;
+    private readonly InventoryService _inventoryService;
 
     /// <summary>El padre lo escucha para cerrar el popup tras guardar o cancelar.</summary>
     public event EventHandler? CloseRequested;
 
-    public ProductEditViewModel(ProductService productService, CategoryService categoryService)
+    public ProductEditViewModel(
+        ProductService productService,
+        CategoryService categoryService,
+        InventoryService inventoryService)
     {
         _productService = productService;
         _categoryService = categoryService;
+        _inventoryService = inventoryService;
     }
 
     [ObservableProperty]
@@ -51,6 +62,25 @@ public partial class ProductEditViewModel : ViewModelBase
     [ObservableProperty]
     private decimal _minStock;
 
+    // ── Ajuste de stock (P3.2): panel inline en la ficha, solo en modo edición ──
+    [ObservableProperty]
+    private bool _isStockAdjustOpen;
+
+    [ObservableProperty]
+    private StockMovementType _stockAdjustType = StockMovementType.Entry;
+
+    [ObservableProperty]
+    private decimal _stockAdjustQuantity;
+
+    [ObservableProperty]
+    private string _stockAdjustReason = string.Empty;
+
+    [ObservableProperty]
+    private string? _stockAdjustError;
+
+    [ObservableProperty]
+    private string? _stockAdjustMessage;
+
     [ObservableProperty]
     private bool _isActive = true;
 
@@ -66,6 +96,14 @@ public partial class ProductEditViewModel : ViewModelBase
 
     public ObservableCollection<CategoryDto> Categories { get; } = [];
 
+    /// <summary>Opciones del selector de tipo de movimiento (P3.2).</summary>
+    public IReadOnlyList<StockAdjustOption> StockAdjustOptions { get; } =
+    [
+        new(StockMovementType.Entry, "Entrada (+stock)"),
+        new(StockMovementType.Exit, "Salida (−stock)"),
+        new(StockMovementType.Adjustment, "Ajuste (fija stock)")
+    ];
+
     /// <summary>Null = crear; distinto de null = editar.</summary>
     private long? _editId;
 
@@ -79,6 +117,9 @@ public partial class ProductEditViewModel : ViewModelBase
 
     public bool HasMargin => Price > Cost;
 
+    /// <summary>Stock bajo o sin stock (para el badge de la ficha, P3.2).</summary>
+    public bool LowStock => Stock <= MinStock;
+
     partial void OnPriceChanged(decimal value)
     {
         OnPropertyChanged(nameof(MarginAmount));
@@ -91,6 +132,16 @@ public partial class ProductEditViewModel : ViewModelBase
         OnPropertyChanged(nameof(MarginAmount));
         OnPropertyChanged(nameof(MarginPercent));
         OnPropertyChanged(nameof(HasMargin));
+    }
+
+    partial void OnStockChanged(decimal value)
+    {
+        OnPropertyChanged(nameof(LowStock));
+    }
+
+    partial void OnMinStockChanged(decimal value)
+    {
+        OnPropertyChanged(nameof(LowStock));
     }
 
     /// <summary>Prepara el popup para CREAR un producto nuevo (formulario vacío).</summary>
@@ -259,4 +310,52 @@ public partial class ProductEditViewModel : ViewModelBase
 
     [RelayCommand]
     private void Cancel() => CloseRequested?.Invoke(this, EventArgs.Empty);
+
+    // ── Ajuste de stock (P3.2) ──
+
+    [RelayCommand]
+    private void OpenStockAdjust()
+    {
+        StockAdjustType = StockMovementType.Entry;
+        StockAdjustQuantity = 0;
+        StockAdjustReason = string.Empty;
+        StockAdjustError = null;
+        StockAdjustMessage = null;
+        IsStockAdjustOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseStockAdjust() => IsStockAdjustOpen = false;
+
+    [RelayCommand]
+    private async Task ApplyStockAdjustAsync()
+    {
+        StockAdjustError = null;
+        StockAdjustMessage = null;
+
+        var result = await _inventoryService.AdjustStockAsync(new AdjustStockRequest
+        {
+            ProductId = _editId!.Value,
+            Type = StockAdjustType,
+            Quantity = StockAdjustQuantity,
+            Reason = StockAdjustReason,
+            UserId = DemoUserId
+        });
+
+        if (result.IsFailure)
+        {
+            StockAdjustError = result.ErrorMessage;
+            return;
+        }
+
+        // Actualiza el stock visible y cierra el panel.
+        Stock = result.Value!.StockAfter;
+        StockAdjustMessage = result.Value.Type switch
+        {
+            StockMovementType.Entry => $"Entrada registrada: +{result.Value.Quantity:N0} → {result.Value.StockAfter:N0} uds.",
+            StockMovementType.Exit => $"Salida registrada: −{result.Value.Quantity:N0} → {result.Value.StockAfter:N0} uds.",
+            _ => $"Ajuste aplicado: stock fijado en {result.Value.StockAfter:N0} uds."
+        };
+        IsStockAdjustOpen = false;
+    }
 }

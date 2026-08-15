@@ -15,6 +15,7 @@ public class PosDbContext : DbContext
     public DbSet<SaleItem> SaleItems => Set<SaleItem>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Sequence> Sequences => Set<Sequence>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,6 +70,16 @@ public class PosDbContext : DbContext
             e.ToTable("Sequences");
             e.HasKey(s => s.Id);
             e.Property(s => s.LastNumber).IsRequired();
+        });
+
+        modelBuilder.Entity<StockMovement>(e =>
+        {
+            e.ToTable("StockMovements");
+            e.Property(m => m.Reason).HasMaxLength(200).IsRequired();
+            e.Property(m => m.Quantity).HasColumnType("decimal(18,2)");
+            e.Property(m => m.StockAfter).HasColumnType("decimal(18,2)");
+            e.Property(m => m.Type).HasConversion<int>();
+            e.HasIndex(m => m.ProductId);
         });
     }
 }
