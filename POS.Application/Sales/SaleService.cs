@@ -178,6 +178,7 @@ public class SaleService
             CreatedAt = sale.CreatedAt,
             UserId = sale.UserId,
             CustomerId = sale.CustomerId,
+            CashSessionId = sale.CashSessionId,
             Subtotal = baseImponible,
             Itbis = itbis,
             Discount = discount,

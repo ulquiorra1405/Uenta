@@ -52,6 +52,8 @@ public static class ReceiptContentBuilder
         Add(Separator);
         Add($"Recibo #: {sale.Number}");
         Add($"Fecha:    {sale.CreatedAt:dd/MM/yyyy HH:mm}");
+        if (sale.CashSessionId is { } cashId)
+            Add($"Caja #:   {cashId}");
         Add(Separator);
         foreach (var item in sale.Items)
         {

@@ -11,6 +11,7 @@ public class SaleDto
     public DateTimeOffset CreatedAt { get; set; }
     public long UserId { get; set; }
     public long? CustomerId { get; set; }
+    public long? CashSessionId { get; set; }
 
     public Money Subtotal { get; set; }
     public Money Itbis { get; set; }

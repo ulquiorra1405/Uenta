@@ -132,6 +132,28 @@ public class ReceiptContentBuilderTests
     }
 
     [Fact]
+    public void Build_ConCaja_MuestraLineaCaja()
+    {
+        var sale = SampleSale();
+        sale.CashSessionId = 3;
+
+        var receipt = ReceiptContentBuilder.Build(sale);
+
+        Assert.Contains("Caja #:   3", receipt);
+    }
+
+    [Fact]
+    public void Build_SinCaja_NoMuestraLineaCaja()
+    {
+        var sale = SampleSale();
+        sale.CashSessionId = null;
+
+        var receipt = ReceiptContentBuilder.Build(sale);
+
+        Assert.DoesNotContain("Caja #:", receipt);
+    }
+
+    [Fact]
     public void Build_ConDatosDeNegocio_EncabezadoYPiePersonalizado()
     {
         var sale = SampleSale();
