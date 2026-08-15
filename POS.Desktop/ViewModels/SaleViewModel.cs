@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using POS.Application.Abstractions;
 using POS.Application.Cash;
+using POS.Application.Customers;
 using POS.Application.Products;
 using POS.Application.Receipts;
 using POS.Application.Sales;
@@ -187,6 +188,15 @@ public partial class EntrySuggestionItem : ObservableObject
     private bool _isSelected;
 }
 
+/// <summary>Opción de cliente del selector de venta (null = anónimo).</summary>
+public record CustomerOption(long? Id, string Label)
+{
+    public static CustomerOption Anonymous { get; } = new(null, "Anónimo");
+
+    /// <summary>El ToString alimenta el Name UIA del ComboBox (accesibilidad/tests).</summary>
+    public override string ToString() => Label;
+}
+
 /// <summary>
 /// Pantalla de venta (Fase 1). Catálogo a la izquierda, carrito + cobro a la derecha.
 /// Flujo escáner: el foco vive en el buscador; Enter agrega y vuelve el foco.
@@ -202,6 +212,7 @@ public partial class SaleViewModel : ViewModelBase
     private readonly ICurrentSession _session;
     private readonly CashSessionService _cashService;
     private readonly CashSessionTracker _cashTracker;
+    private readonly CustomerService _customerService;
     private CancellationTokenSource? _debounceCts;
 
     public SaleViewModel(
@@ -213,7 +224,8 @@ public partial class SaleViewModel : ViewModelBase
         SettingsService settingsService,
         ICurrentSession session,
         CashSessionService cashService,
-        CashSessionTracker cashTracker)
+        CashSessionTracker cashTracker,
+        CustomerService customerService)
     {
         _productService = productService;
         _categoryService = categoryService;
@@ -224,6 +236,7 @@ public partial class SaleViewModel : ViewModelBase
         _session = session;
         _cashService = cashService;
         _cashTracker = cashTracker;
+        _customerService = customerService;
         _cashTracker.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(CashSessionTracker.HasOpen) or nameof(CashSessionTracker.Current))
@@ -238,6 +251,23 @@ public partial class SaleViewModel : ViewModelBase
 
     /// <summary>La vista se suscribe para devolver el foco al buscador (loop de escaneo).</summary>
     public event Action? FocusSearchRequested;
+
+    // ─────────────────────────── Cliente de la venta (P4.1) ───────────────────────────
+
+    /// <summary>Clientes disponibles para asociar a la venta (primero: Anónimo).</summary>
+    public ObservableCollection<CustomerOption> CustomerOptions { get; } = [CustomerOption.Anonymous];
+
+    /// <summary>Cliente seleccionado (null = Anónimo).</summary>
+    [ObservableProperty]
+    private CustomerOption? _selectedCustomer;
+
+    /// <summary>Etiqueta del cliente actual para el encabezado del ticket.</summary>
+    public string CustomerLabel => SelectedCustomer?.Label ?? "Anónimo";
+
+    partial void OnSelectedCustomerChanged(CustomerOption? value)
+    {
+        OnPropertyChanged(nameof(CustomerLabel));
+    }
 
     // ─────────────────────────── Línea de entrada (modelo B) ───────────────────────────
 
@@ -803,7 +833,7 @@ public partial class SaleViewModel : ViewModelBase
         var request = new CreateSaleRequest
         {
             UserId = _session.CurrentUserId,
-            CustomerId = null,
+            CustomerId = SelectedCustomer?.Id,
             CashSessionId = _cashTracker.Current?.Id,
             GlobalDiscount = GlobalDiscount,
             Items = CartLines.Select(l => new SaleItemRequest
@@ -983,6 +1013,7 @@ public partial class SaleViewModel : ViewModelBase
     public override async Task OnNavigatedToAsync()
     {
         await RefreshCashAsync();
+        await LoadCustomersAsync();
         await LoadCategoriesAsync();
         await LoadProductsAsync();
         try
@@ -990,6 +1021,27 @@ public partial class SaleViewModel : ViewModelBase
             AutoPrint = await _settingsService.GetBoolAsync(SettingKeys.AutoPrint, true);
         }
         catch { /* default AutoPrint = true */ }
+    }
+
+    /// <summary>Carga los clientes del selector (Anónimo queda primero, P4.1).</summary>
+    private async Task LoadCustomersAsync()
+    {
+        try
+        {
+            var customers = await _customerService.GetAllAsync();
+            CustomerOptions.Clear();
+            CustomerOptions.Add(CustomerOption.Anonymous);
+            foreach (var c in customers.OrderBy(c => c.Name))
+                CustomerOptions.Add(new CustomerOption(c.Id, c.Name));
+            SelectedCustomer = CustomerOption.Anonymous;
+        }
+        catch
+        {
+            // Sin clientes el selector solo ofrece Anónimo: la venta no se bloquea.
+            CustomerOptions.Clear();
+            CustomerOptions.Add(CustomerOption.Anonymous);
+            SelectedCustomer = CustomerOption.Anonymous;
+        }
     }
 
     /// <summary>Refresca la caja abierta del usuario desde la DB (entrar a venta, abrir/cerrar/retiro).</summary>

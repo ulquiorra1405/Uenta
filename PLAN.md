@@ -362,6 +362,24 @@
   fijo" de venta.md §6 decisión 3.
 - **Verificación:** registrar cliente → vender asociado → historial muestra la compra;
   UIA + tests.
+- **Estado:** ✅ HECHO (15-ago-2026). Entidad `Customer` + navegaciones
+  `Sale.Customer`/`Sale.User`; `ICustomerRepository` + `CustomerRepository` (GetAll,
+  GetById, RncCedulaExists, Add, Update, GetSales con Include User+Items);
+  `CustomerService` (Create/Update con validación `NAME_REQUIRED`/`RNC_DUPLICATED`,
+  `GetHistoryAsync` → `CustomerSaleDto` con `s.User?.DisplayName`); tabla `Customers`
+  + índices RNC + FKs (migración `AddCustomers`). Desktop: `CustomersViewModel` +
+  `CustomersView` (lista + popup crear + edición inline + popup historial), item
+  "Clientes" en el sidebar (permiso Sell, todos los roles), selector ComboBox en la
+  venta (`CustomerOption` con "Anónimo" primero; `ToString` → Label para UIA).
+  Lección: `CreateAsync` guardaba con `IsCreateOpen` (heredado de Users) → retornaba
+  siempre con el popup abierto; corregido con `IsCreating`. Lección: los `<Run>` de
+  un TextBlock NO se exponen en el árbol UIA (mismo caso que el falso positivo de
+  usuarios) → `StringFormat` + propiedad `MetaText`. Build 0/0, **123/123 tests**
+  (10 nuevos en `CustomerServiceTests`: CRUD, RNC duplicado (create y update),
+  inexistente, orden por nombre, historial con venta asociada, ventas anónimas no
+  aparecen, historial inexistente). UIA verificado: cliente "Juan Rodriguez" creado
+  y persistido; selector en venta lista el cliente; venta #8 asociada (CustomerId=1);
+  historial muestra "Recibo #8" (popup abierto + botón Cerrar).
 
 ### P4.2 — Reportes / Dashboard
 

@@ -405,6 +405,27 @@
                             </StackPanel>
                         </Button>
 
+                        <Button Command="{Binding GoCustomersCommand}" ToolTip="Clientes"
+                                AutomationProperties.Name="Clientes"
+                                Visibility="{Binding CanManageCustomers, Converter={StaticResource BoolToVis}}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCustomersActive}" Value="True">
+                                            <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource CustomerIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                      StrokeThickness="1.8" Width="17" Height="17" Stretch="Uniform"
+                                      VerticalAlignment="Center" />
+                                <TextBlock Text="Clientes" Margin="12,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                            </StackPanel>
+                        </Button>
+
                         <Button Command="{Binding GoSettingsCommand}" ToolTip="Ajustes"
                                 AutomationProperties.Name="Ajustes"
                                 Visibility="{Binding CanManageSettings, Converter={StaticResource BoolToVis}}">

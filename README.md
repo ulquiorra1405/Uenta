@@ -99,7 +99,7 @@ POS.sln
 | Fase 1A | Recibo real: impresora ESC/POS + ajustes | ✅ Cerrada (15-ago) |
 | Fase 1B | Usuarios/roles + login, caja, auditoría | ✅ Cerrada (15-ago) |
 | Fase 1C | Catálogo completo + inventario | ✅ Cerrada (15-ago) |
-| Fase 1D | Clientes, reportes, backup/restore | 🔄 en curso — P4.3 backup ✅ (15-ago) |
+| Fase 1D | Clientes, reportes, backup/restore | 🔄 en curso — P4.3 backup ✅ + P4.1 clientes ✅ (15-ago) |
 | Fase 2 | Devoluciones, compras/proveedores, e-CF (DGII) | Pendiente |
 | Fase 3 | Fidelización, multi-sucursal, API móvil | Pendiente |
 

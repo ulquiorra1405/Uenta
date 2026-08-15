@@ -35,6 +35,7 @@ public partial class MainWindowViewModel : ViewModelBase
         GoSalesCommand = new AsyncRelayCommand(GoSalesAsync);
         GoSettingsCommand = new AsyncRelayCommand(GoSettingsAsync);
         GoUsersCommand = new AsyncRelayCommand(GoUsersAsync);
+        GoCustomersCommand = new AsyncRelayCommand(GoCustomersAsync);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
@@ -47,6 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsSalesActive));
             OnPropertyChanged(nameof(IsSettingsActive));
             OnPropertyChanged(nameof(IsUsersActive));
+            OnPropertyChanged(nameof(IsCustomersActive));
             ObserveOverlayFlags();
         };
 
@@ -83,6 +85,8 @@ public partial class MainWindowViewModel : ViewModelBase
             case nameof(SaleViewModel.IsResultOpen):
             case nameof(ProductListViewModel.IsCategoryManagerOpen):
             case nameof(ProductListViewModel.IsProductEditorOpen):
+            case nameof(CustomersViewModel.IsCreateOpen):
+            case nameof(CustomersViewModel.IsHistoryOpen):
                 UpdateIsAnyOverlayOpen();
                 break;
         }
@@ -100,6 +104,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             SaleViewModel s => s.IsCatalogOpen || s.IsPaymentOpen || s.IsResultOpen || IsAnyCashModalOpen,
             ProductListViewModel p => p.IsCategoryManagerOpen || p.IsProductEditorOpen,
+            CustomersViewModel c => c.IsCreateOpen || c.IsHistoryOpen,
             _ => IsAnyCashModalOpen,
         };
     }
@@ -131,6 +136,12 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Usuarios: {ex}"); }
     }
 
+    private async Task GoCustomersAsync()
+    {
+        try { await Navigation.NavigateToAsync<CustomersViewModel>(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Clientes: {ex}"); }
+    }
+
     /// <summary>Vista actual; el ContentControl del MainWindow bindea aquí.</summary>
     public ViewModelBase? Current => Navigation.Current;
 
@@ -138,6 +149,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AsyncRelayCommand GoSalesCommand { get; }
     public AsyncRelayCommand GoSettingsCommand { get; }
     public AsyncRelayCommand GoUsersCommand { get; }
+    public AsyncRelayCommand GoCustomersCommand { get; }
     public RelayCommand ToggleSidebarCommand { get; }
     public AsyncRelayCommand LogoutCommand { get; }
 
@@ -154,6 +166,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsSalesActive => Current is SaleViewModel;
     public bool IsSettingsActive => Current is SettingsViewModel;
     public bool IsUsersActive => Current is UsersViewModel;
+    public bool IsCustomersActive => Current is CustomersViewModel;
 
     partial void OnIsSidebarCollapsedChanged(bool value)
     {
@@ -162,6 +175,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSalesActive));
         OnPropertyChanged(nameof(IsSettingsActive));
         OnPropertyChanged(nameof(IsUsersActive));
+        OnPropertyChanged(nameof(IsCustomersActive));
     }
 
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
@@ -189,6 +203,10 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>¿El usuario puede ver los ajustes? (imprimir/configuración del negocio).</summary>
     public bool CanManageSettings => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.ManageSettings);
 
+    /// <summary>¿El usuario puede ver la sección Clientes? CRM operativo:
+    /// cualquier rol con permiso de venta (todos los roles).</summary>
+    public bool CanManageCustomers => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.Sell);
+
     /// <summary>¿El usuario puede cerrar caja? Controla el botón de cierre en el header.</summary>
     public bool CanCloseCash => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.CloseCash);
 
@@ -201,6 +219,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(UserInitial));
         OnPropertyChanged(nameof(CanManageCatalog));
         OnPropertyChanged(nameof(CanManageUsers));
+        OnPropertyChanged(nameof(CanManageCustomers));
         OnPropertyChanged(nameof(CanManageSettings));
         OnPropertyChanged(nameof(CanCloseCash));
     }

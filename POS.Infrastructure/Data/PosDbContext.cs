@@ -21,6 +21,7 @@ public class PosDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<CashWithdrawal> CashWithdrawals => Set<CashWithdrawal>();
+    public DbSet<Customer> Customers => Set<Customer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -133,5 +134,27 @@ public class PosDbContext : DbContext
             e.Property(w => w.Reason).HasMaxLength(200).IsRequired();
             e.HasOne(w => w.CashSession).WithMany(s => s.Withdrawals).HasForeignKey(w => w.CashSessionId);
         });
+
+        modelBuilder.Entity<Customer>(e =>
+        {
+            e.ToTable("Customers");
+            e.Property(c => c.Name).HasMaxLength(200).IsRequired();
+            e.Property(c => c.Phone).HasMaxLength(30);
+            e.Property(c => c.RncCedula).HasMaxLength(20);
+            e.Property(c => c.Email).HasMaxLength(150);
+            e.HasIndex(c => c.RncCedula);
+        });
+
+        modelBuilder.Entity<Sale>()
+            .HasOne(s => s.Customer)
+            .WithMany(c => c.Sales)
+            .HasForeignKey(s => s.CustomerId)
+            .IsRequired(false);
+
+        modelBuilder.Entity<Sale>()
+            .HasOne(s => s.User)
+            .WithMany()
+            .HasForeignKey(s => s.UserId)
+            .IsRequired();
     }
 }

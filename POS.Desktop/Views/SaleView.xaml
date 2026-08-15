@@ -40,9 +40,16 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="VENTA NUEVA" Style="{StaticResource SectionTitle}" />
-                        <TextBlock Text="Cliente: Anónimo" FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
-                                   ToolTip="El registro de clientes llega en un próximo incremento." />
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock Text="Cliente:" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                            <ComboBox ItemsSource="{Binding CustomerOptions}"
+                                      SelectedItem="{Binding SelectedCustomer}"
+                                      DisplayMemberPath="Label" FontSize="12" Padding="8,3"
+                                      MinWidth="140" MaxWidth="240" Margin="6,0,0,0"
+                                      VerticalContentAlignment="Center"
+                                      AutomationProperties.Name="ClienteVenta" />
+                        </StackPanel>
                     </StackPanel>
                     <Border Grid.Column="1" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="10,6" VerticalAlignment="Center">

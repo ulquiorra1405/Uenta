@@ -20,6 +20,12 @@ public class Sale
     public long? CustomerId { get; set; }
     public long? CashSessionId { get; set; }
 
+    /// <summary>Vendedor que registró la venta.</summary>
+    public User? User { get; set; }
+
+    /// <summary>Cliente asociado (P4.1); null = venta anónima.</summary>
+    public Customer? Customer { get; set; }
+
     /// <summary>Base imponible (total − ITBIS). Subtotal + Itbis = Total.</summary>
     public Money Subtotal { get; set; }
 

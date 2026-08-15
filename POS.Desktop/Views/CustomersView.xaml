@@ -1,0 +1,212 @@
+<UserControl x:Class="POS.Desktop.Views.CustomersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:POS.Desktop.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Clientes" Style="{StaticResource SectionTitle}"
+                   Margin="0,0,0,12" />
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Nuevo cliente" Height="40" Padding="20,0" FontSize="13.5"
+                        Style="{StaticResource AccentButton}"
+                        AutomationProperties.Name="NuevoCliente"
+                        Command="{Binding OpenCreateCommand}" />
+            </StackPanel>
+            <!-- Error de carga -->
+            <Border Background="{StaticResource DangerLightBrush}" CornerRadius="6" Padding="12,10"
+                    Margin="0,10,0,0"
+                    Visibility="{Binding LoadError, Converter={StaticResource NullToVis}}">
+                <TextBlock Text="{Binding LoadError}" FontSize="12" Foreground="{StaticResource DangerBrush}"
+                           TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+
+        <!-- Lista -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorder}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Customers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CustomerListItem}">
+                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                                    Padding="14,10">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" FontSize="13.5" FontWeight="SemiBold" />
+                                            <TextBlock FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}"
+                                                       Margin="0,2,0,0">
+                                                <Run Text="{Binding Phone}" /><Run Text=" · " /><Run Text="{Binding RncCedula}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Message}" FontSize="11.5"
+                                                       Foreground="{StaticResource PrimaryDarkBrush}" Margin="0,4,0,0" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="Historial" Style="{StaticResource SecondaryButton}"
+                                                    Padding="12,5" FontSize="12"
+                                                    AutomationProperties.Name="HistorialCliente"
+                                                    Command="{Binding DataContext.ShowHistoryCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Content="Editar" Style="{StaticResource SecondaryButton}"
+                                                    Padding="12,5" FontSize="12" Margin="6,0,0,0"
+                                                    AutomationProperties.Name="EditarCliente"
+                                                    Command="{Binding DataContext.BeginEditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Expander IsExpanded="{Binding IsEditing}" Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel Margin="14,6,14,12">
+                                            <TextBlock Text="Nombre" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontSize="13" Padding="8,6" Margin="0,3,0,8" MaxWidth="320"
+                                                     AutomationProperties.Name="ClienteNombre" />
+                                            <TextBlock Text="Teléfono" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBox Text="{Binding EditPhone, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontSize="13" Padding="8,6" Margin="0,3,0,8" MaxWidth="320"
+                                                     AutomationProperties.Name="ClienteTelefono" />
+                                            <TextBlock Text="RNC / Cédula" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBox Text="{Binding EditRncCedula, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontSize="13" Padding="8,6" Margin="0,3,0,8" MaxWidth="320"
+                                                     AutomationProperties.Name="ClienteRnc" />
+                                            <TextBlock Text="Correo" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBox Text="{Binding EditEmail, UpdateSourceTrigger=PropertyChanged}"
+                                                     FontSize="13" Padding="8,6" Margin="0,3,0,10" MaxWidth="320"
+                                                     AutomationProperties.Name="ClienteEmail" />
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Guardar" Style="{StaticResource AccentButton}"
+                                                        Padding="16,6" FontSize="12.5"
+                                                        AutomationProperties.Name="GuardarCliente"
+                                                        Command="{Binding DataContext.SaveEditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" />
+                                                <Button Content="Cancelar" Style="{StaticResource SecondaryButton}"
+                                                        Padding="16,6" FontSize="12.5" Margin="6,0,0,0"
+                                                        Command="{Binding DataContext.CancelEditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Expander>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Popup crear cliente -->
+        <Grid Grid.Row="2" Visibility="{Binding IsCreateOpen, Converter={StaticResource BoolToVis}}">
+            <Border Background="{StaticResource ScrimBrush}" />
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource CardBorder}"
+                    Padding="24" Width="400" Background="{StaticResource SurfaceBrush}">
+                <StackPanel>
+                    <TextBlock Text="Nuevo cliente" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14" />
+                    <TextBlock Text="Nombre *" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="13" Padding="8,7" Margin="0,3,0,10"
+                             AutomationProperties.Name="NuevoClienteNombre" />
+                    <TextBlock Text="Teléfono" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding NewPhone, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="13" Padding="8,7" Margin="0,3,0,10"
+                             AutomationProperties.Name="NuevoClienteTelefono" />
+                    <TextBlock Text="RNC / Cédula" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding NewRncCedula, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="13" Padding="8,7" Margin="0,3,0,10"
+                             AutomationProperties.Name="NuevoClienteRnc" />
+                    <TextBlock Text="Correo" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBox Text="{Binding NewEmail, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="13" Padding="8,7" Margin="0,3,0,12"
+                             AutomationProperties.Name="NuevoClienteEmail" />
+
+                    <TextBlock Text="{Binding CreateError}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap"
+                               Visibility="{Binding CreateError, Converter={StaticResource NullToVis}}" />
+                    <TextBlock Text="{Binding CreateMessage}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource PrimaryDarkBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Visibility="{Binding CreateMessage, Converter={StaticResource NullToVis}}" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                        <Button Content="Cancelar" Style="{StaticResource SecondaryButton}" Padding="18,8" FontSize="13"
+                                Command="{Binding CloseCreateCommand}" />
+                        <Button Content="Registrar" Style="{StaticResource AccentButton}" Padding="18,8" FontSize="13"
+                                Margin="8,0,0,0" AutomationProperties.Name="RegistrarCliente"
+                                Command="{Binding CreateCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Popup historial -->
+        <Grid Grid.Row="2" Visibility="{Binding IsHistoryOpen, Converter={StaticResource BoolToVis}}">
+            <Border Background="{StaticResource ScrimBrush}" />
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource CardBorder}"
+                    Padding="24" Width="520" Background="{StaticResource SurfaceBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                        <TextBlock Text="Historial de " FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding HistoryCustomerName}" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryDarkBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="Compras registradas del cliente" FontSize="11.5"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,12" />
+
+                    <TextBlock Text="{Binding HistoryMessage}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource PrimaryDarkBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                               Visibility="{Binding HistoryMessage, Converter={StaticResource NullToVis}}" />
+
+                    <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6"
+                            MaxHeight="320">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding HistorySales}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:CustomerSaleListItem}">
+                                        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                                                Padding="10,7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock FontSize="12.5" FontWeight="SemiBold"
+                                                               Text="{Binding Number, StringFormat=Recibo #\{0\}}" />
+                                                    <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"
+                                                               Text="{Binding MetaText}" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding TotalText}" FontSize="13"
+                                                           FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                        <Button Content="Cerrar" Style="{StaticResource SecondaryButton}" Padding="18,8" FontSize="13"
+                                AutomationProperties.Name="CerrarHistorial"
+                                Command="{Binding CloseHistoryCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
