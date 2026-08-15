@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddSingleton<ICurrentSession, CurrentSession>();
         services.AddScoped<IReceiptPrinter, ThermalReceiptPrinter>();
         services.AddScoped<ReceiptPdfGenerator>();
+        services.AddScoped<IDatabaseBackupService, DatabaseBackupService>();
 
         return services;
     }

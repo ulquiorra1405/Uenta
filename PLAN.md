@@ -378,6 +378,16 @@
 - **Merge/Reemplaza:** el hueco de "Operación" del scope de Fase 1.
 - **Verificación:** exportar → borrar DB → importar → datos intactos; restaurar con
   archivo inválido → error claro, DB actual intacta.
+- **Estado:** ✅ HECHO (15-ago-2026). `IDatabaseBackupService` +
+  `DatabaseBackupService`: export con `VACUUM INTO` (copia consistente, no bloquea la
+  DB en uso); restore valida ANTES de tocar nada (existencia, header mágico SQLite,
+  apertura read-only + tablas esperadas de Uenta) y crea backup automático
+  `pos.db.bak-<timestamp>` de la DB actual antes de reemplazar. UI en Ajustes:
+  sección "Base de datos" (Exportar copia → SaveFileDialog; Restaurar... →
+  OpenFileDialog + MessageBox de confirmación; mensajes de resultado inline).
+  Build 0/0, 113/113 tests (5 nuevos), UIA: export OK (archivo 126976 bytes),
+  restore válido OK (con `.bak` creado + mensaje), restore inválido → error claro
+  "no es una base de datos válida" y DB actual intacta.
 
 ---
 

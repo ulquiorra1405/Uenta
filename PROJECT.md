@@ -258,7 +258,7 @@ VS Code + C# Dev Kit sigue siendo buena opción para tareas ligeras (editar, rev
 | **Fase 1A** | Recibo real: impresora ESC/POS + conectar al cobro + Ajustes | ✅ **cerrada 15-ago** (P1.1 térmica real, P1.2 modal Imprimir/PDF, P1.3 Ajustes) |
 | **Fase 1B** | Usuarios/roles + login, caja (apertura/cierre), auditoría | ✅ **cerrada 15-ago** (P2.1 login/roles/permisos/auditoría + P2.2 caja completa; 106/106 tests) |
 | **Fase 1C** | Catálogo completo (variantes P9) + movimientos de inventario | 🔄 en curso — P3.1 ✅ + P3.1b ✅ + P3.2 ✅ (15-ago) |
-| **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | ⏳ (PLAN.md) |
+| **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | 🔄 en curso — P4.3 ✅ (15-ago) |
 | **Fase 2** | Devoluciones/notas de crédito, compras/proveedores, e-CF (DGII) | ⏳ |
 | **Fase 3** | Fidelización, reportes avanzados, multi-sucursal, POS.Api + app móvil | ⏳ |
 
