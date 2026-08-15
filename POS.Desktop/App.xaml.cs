@@ -34,12 +34,15 @@ public partial class App : System.Windows.Application
         services.AddInfrastructure(connectionString);
 
         services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<CashSessionTracker>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
         services.AddTransient<ProductListViewModel>();
         services.AddTransient<ProductEditViewModel>();
         services.AddTransient<SaleViewModel>();
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<UsersViewModel>();
+        services.AddTransient<LoginViewModel>();
         services.AddTransient<PlaceholderViewModel>();
 
         _services = services.BuildServiceProvider();
@@ -66,15 +69,15 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        // Vista inicial: pantalla de venta.
+        // Vista inicial: login (P2.1c). La venta solo se abre tras autenticar.
         var navigation = _services.GetRequiredService<INavigationService>();
         try
         {
-            await navigation.NavigateToAsync<SaleViewModel>();
+            await navigation.NavigateToAsync<LoginViewModel>();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error al iniciar la pantalla de venta:\n{ex.Message}",
+            MessageBox.Show($"Error al iniciar la pantalla de login:\n{ex.Message}",
                 "Uenta", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
             return;

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using POS.Application;
 using POS.Application.Abstractions;
+using POS.Application.Auth;
+using POS.Application.Cash;
 using POS.Application.Sales;
 using POS.Domain.Entities;
 using POS.Domain.Enums;
@@ -23,6 +25,8 @@ public class SaleServiceTests : IDisposable
     private readonly SaleService _saleService;
     private readonly PosDbContext _db;
     private readonly IReceiptPrinter _printer;
+    private readonly long _adminUserId;
+    private readonly long _cashSessionId;
 
     public SaleServiceTests()
     {
@@ -39,6 +43,24 @@ public class SaleServiceTests : IDisposable
 
         _saleService = _services.GetRequiredService<SaleService>();
         _printer = _services.GetRequiredService<IReceiptPrinter>();
+
+        // P2.1/P2.2: la venta exige usuario con sesión y caja ABIERTA. Se siembra un
+        // Admin (sin tope de descuento) con su caja abierta, como haría el arranque.
+        var users = _services.GetRequiredService<IUserRepository>();
+        var hasher = _services.GetRequiredService<IPasswordHasher>();
+        var user = new User
+        {
+            Username = "admin",
+            DisplayName = "Admin",
+            PasswordHash = hasher.Hash("admin123"),
+            Role = UserRole.Admin,
+            IsActive = true
+        };
+        _adminUserId = users.AddAsync(user).GetAwaiter().GetResult();
+
+        var cash = _services.GetRequiredService<CashSessionService>();
+        var open = cash.OpenAsync(new OpenCashRequest(_adminUserId, InitialCash: 0m)).GetAwaiter().GetResult();
+        _cashSessionId = open.Value!.Id;
     }
 
     public void Dispose()
@@ -68,7 +90,8 @@ public class SaleServiceTests : IDisposable
         var product = await SeedProductAsync();
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 2 }],
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 200m }]
         };
@@ -93,7 +116,8 @@ public class SaleServiceTests : IDisposable
         var product = await SeedProductAsync(stock: 1m);
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 5 }],
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 500m }]
         };
@@ -110,7 +134,8 @@ public class SaleServiceTests : IDisposable
     {
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = 999, Quantity = 1 }],
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
         };
@@ -122,12 +147,65 @@ public class SaleServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CrearVenta_SinCajaAbierta_FallaCashClosed()
+    {
+        var product = await SeedProductAsync();
+        var request = new CreateSaleRequest
+        {
+            UserId = _adminUserId,
+            CashSessionId = null, // sin caja abierta → la venta se bloquea (P2.2b)
+            Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
+            Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
+        };
+
+        var result = await _saleService.CreateSaleAsync(request);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("CASH_CLOSED", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task CrearVenta_CajaDeOtroUsuario_FallaCashNotOwned()
+    {
+        var product = await SeedProductAsync();
+        var users = _services.GetRequiredService<IUserRepository>();
+        var hasher = _services.GetRequiredService<IPasswordHasher>();
+        var otherUser = new User
+        {
+            Username = "otro",
+            DisplayName = "Otro",
+            PasswordHash = hasher.Hash("otro123"),
+            Role = UserRole.Cajero,
+            IsActive = true
+        };
+        var otherId = await users.AddAsync(otherUser);
+        var cash = _services.GetRequiredService<CashSessionService>();
+        var open = await cash.OpenAsync(new OpenCashRequest(otherId, 0m));
+        var otherCashId = open.Value!.Id;
+
+        // El Admin intenta usar la caja del otro usuario → rechazado
+        var request = new CreateSaleRequest
+        {
+            UserId = _adminUserId,
+            CashSessionId = otherCashId,
+            Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
+            Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
+        };
+
+        var result = await _saleService.CreateSaleAsync(request);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("CASH_NOT_OWNED", result.ErrorCode);
+    }
+
+    [Fact]
     public async Task CrearVenta_PagoInsuficiente_Falla()
     {
         var product = await SeedProductAsync();
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 50m }]
         };
@@ -144,7 +222,8 @@ public class SaleServiceTests : IDisposable
         var product = await SeedProductAsync();
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 2 }],
             Payments =
             [
@@ -165,7 +244,8 @@ public class SaleServiceTests : IDisposable
         var product = await SeedProductAsync();
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 2 }], // 200
             GlobalDiscount = 50m,
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 150m }]
@@ -203,7 +283,8 @@ public class SaleServiceTests : IDisposable
 
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items =
             [
                 new SaleItemRequest { ProductId = cafe.Id, Quantity = 2, UnitPrice = 100m, LineDiscount = line1Discount },
@@ -231,7 +312,8 @@ public class SaleServiceTests : IDisposable
         // 1ª venta válida → número 1
         var ok1 = await _saleService.CreateSaleAsync(new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
         });
@@ -241,7 +323,8 @@ public class SaleServiceTests : IDisposable
         // Venta inválida (descuento global supera total) → falla ANTES de persistir
         var bad = await _saleService.CreateSaleAsync(new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
             GlobalDiscount = 500m,
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
@@ -251,7 +334,8 @@ public class SaleServiceTests : IDisposable
         // Siguiente venta válida → número 2 (consecutivo, sin hueco)
         var ok2 = await _saleService.CreateSaleAsync(new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items = [new SaleItemRequest { ProductId = product.Id, Quantity = 1 }],
             Payments = [new PaymentRequest { Method = PaymentMethod.Cash, Amount = 100m }]
         });
@@ -268,7 +352,8 @@ public class SaleServiceTests : IDisposable
 
         var request = new CreateSaleRequest
         {
-            UserId = 1,
+            UserId = _adminUserId,
+            CashSessionId = _cashSessionId,
             Items =
             [
                 new SaleItemRequest { ProductId = cafe.Id, Quantity = 2 },

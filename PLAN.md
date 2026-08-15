@@ -178,6 +178,12 @@
 
 ## Fase 1B — Usuarios, permisos y caja (núcleo operativo)
 
+> Decisiones tomadas (15-ago-2026): gestión de usuarios SOLO Admin (UI mínima en P2.1);
+> auditoría = datos + tests (vista va en Fase 1D con reportes); retiro de caja libre con
+> motivo obligatorio; cierre con conteo de EFECTIVO (tarjeta/transferencia se listan como
+> referencia, no se cuentan — van al banco); seed `admin/admin123`, `supervisor/super123`,
+> `cajero/cajero123` sin forzar cambio (demo).
+
 ### P2.1 — Login local + roles + auditoría
 
 - **Objetivo:** usuarios (Admin/Supervisor/Cajero) con contraseña local, login al
@@ -188,6 +194,48 @@
 - **Verificación:** login OK/fallo, permisos por rol aplicados en comandos (CanExecute),
   entradas de audit log tras vender/ajustar.
 
+#### Matriz de permisos (decisión 15-ago-2026)
+
+| Permiso | Admin | Supervisor | Cajero |
+|---|---|---|---|
+| Vender / cobrar | ✅ | ✅ | ✅ |
+| Ver costos | ✅ | ❌ | ❌ |
+| Cerrar caja | ✅ | ✅ | ❌ |
+| Gestionar productos + categorías | ✅ | ✅ | ❌ |
+| Ajustar stock | ✅ | ✅ | ❌ |
+| Gestionar usuarios | ✅ | ❌ | ❌ |
+| Ver auditoría | ✅ | ❌ | ❌ (vista en Fase 1D) |
+| Tope descuento global | ∞ | 25% | 10% (configurable `Setting`) |
+
+#### Pasos
+
+- **P2.1a — Dominio + auth:** `User` (Username único CI, DisplayName, PasswordHash
+  PBKDF2+salt, Role, IsActive, CreatedAt), `Role` enum, `AuditLog` (UserId, Action,
+  Detail, CreatedAt), `IPasswordHasher`, `AuthService.ValidateAsync`. Seed 3 usuarios.
+  Tests: hash→verifica, password incorrecta falla.
+- **P2.1b — Sesión:** `ICurrentSession` singleton (User activo) reemplaza
+  `DemoUserId = 1`; `MainWindowViewModel` expone `CurrentUser`.
+- **P2.1c — Login UI:** `LoginView` (usuario, contraseña, Enter, error inline);
+  arranque → login → venta. Header real (nombre + rol). UIA login OK/fallo.
+- **P2.1d — Permisos en comandos:** `CanExecute` por rol + sidebar dinámico
+  (Cajero: solo Ventas) + tope de descuento en `SaleService` y UI. Tests.
+- **P2.1e — Gestión de usuarios (Admin):** pantalla mínima — lista, crear
+  (username/display/rol/contraseña), activar/desactivar, reset de contraseña.
+- **P2.1f — Auditoría (datos + tests):** `AuditService` inyectado en `SaleService`
+  (venta), `InventoryService` (ajuste), `ProductService` (cambio de precio),
+  `AuthService` (login OK/fallo). Vista → Fase 1D.
+- **Estado:** ✅ HECHO (15-ago-2026). Entidades `User`/`Role`/`AuditLog` + `Permissions`
+  (matriz central: Admin/Supervisor/Cajero + `ManageSettings` nuevo, usado en P2.1d).
+  `PasswordHasher` PBKDF2+salt, `AuthService.ValidateAsync` (login OK/fallo con audit),
+  `ICurrentSession` (sesión activa) + `SignInAsync/SignOutAsync` con notificación
+  `SessionChanged`. `LoginView`/`LoginViewModel` (arranque → login → venta; header real
+  con nombre + rol + avatar inicial; logout). Sidebar dinámico por rol (Cajero solo
+  Ventas) + header/footer con usuario real + botones de caja por permiso
+  (`CanCloseCash`). `UsersView`/`UsersViewModel` (Admin): lista, crear/editar
+  (username/display/rol/contraseña), activar/desactivar, reset contraseña, no borra al
+  propio usuario. Tope de descuento por rol aplicado (∞/25%/10%). Build 0/0, 106/106
+  tests, smoke UIA (login admin/cajero, sidebar, permisos, logout) OK.
+
 ### P2.2 — Caja: apertura/cierre
 
 - **Objetivo:** apertura (efectivo inicial), retiros, cierre (conteo + diferencia) y la
@@ -197,6 +245,45 @@
   cerrada + hint "Abra la caja para cobrar").
 - **Verificación:** UIA apertura → venta → cierre → diferencia; COBRAR deshabilitado con
   caja cerrada; test de cierre con conteo correcto.
+
+#### Reglas (PROJECT §7.3 + venta.md §4.4)
+
+- Solo se cobra con caja **abierta** del usuario activo (`CASH_CLOSED`).
+- Una caja abierta por usuario (validación + índice).
+- Retiro: libre, **motivo obligatorio**.
+- Cierre: conteo de efectivo; esperado = inicial + Σ(ventas efectivo) − Σ(retiros);
+  diferencia = conteo − esperado. Tarjeta/transferencia se listan como referencia.
+
+#### Pasos
+
+- **P2.2a — Dominio + servicio:** `CashSession` (UserId, OpenedAt, InitialCash,
+  ClosedAt?, FinalCount?, Difference?, Status) + `CashWithdrawal` (Amount, Reason,
+  CreatedAt) + `Sale.CashSessionId`. `CashSessionService`: Open (rechaza si abierta),
+  Withdraw (motivo), Close (conteo + diferencia). Tests.
+- **P2.2b — Conectar venta:** `CreateSaleRequest.CashSessionId` desde sesión activa;
+  `SaleService` rechaza sin caja abierta. Tests.
+- **P2.2c — UI caja:** badge "Caja # · abierta" en header + modales apertura (efectivo
+  inicial) / retiro (monto + motivo) / cierre (conteo + diferencia en vivo). COBRAR
+  bloqueado + banner "Abra la caja para cobrar" (regla 4.4).
+- **P2.2d — Verificación UIA:** apertura → venta → retiro → cierre → diferencia;
+  recibo muestra "Caja #".
+- **Estado:** ✅ HECHO (15-ago-2026). Entidades `CashSession` (UserId, OpenedAt,
+  InitialCash, ClosedAt?, FinalCount?, Difference?, Status) + `CashWithdrawal` (Amount,
+  Reason obligatorio) + `Sale.CashSessionId`. `CashSessionService`: Open (rechaza si
+  hay abierta — `CASH_ALREADY_OPEN`), Withdraw (motivo), Close (conteo + esperado =
+  inicial + Σ efectivo − Σ retiros + diferencia), GetOpenByUserAsync. `SaleService`
+  rechaza sin caja abierta (`CASH_CLOSED`) y con caja de otro usuario
+  (`CASH_NOT_OWNED`). `CashSessionTracker` singleton compartido (badge "Caja # · 
+  abierta/cerrada" + "Fondo RD$ X · Efectivo RD$ Y" en header) entre
+  `MainWindowViewModel` (comandos de caja globales) y `SaleViewModel` (bloqueo COBRAR
+  con caja cerrada + `CashSessionId` en la venta + refresh del badge tras cobrar).
+  `CashModalsView` global: apertura (efectivo inicial), retiro (monto + motivo),
+  cierre (conteo → diferencia + toast con resultado). Build 0/0, 106/106 tests, UIA
+  completo OK: abrir (500) → venta (100) → badge Efectivo 100.00 → retiros (2×20) →
+  cierre conteo 555 → "Caja #1 cerrada · Diferencia RD$ -5.00" → COBRAR/EFECTIVO
+  deshabilitados con caja cerrada → logout/login cajero con sidebar restringido.**
+  Pendiente menor (P2.2d): recibo debe mostrar "Caja #" (se asocia `CashSessionId`
+  en la venta; falta imprimirlo en el ticket).
 
 ---
 

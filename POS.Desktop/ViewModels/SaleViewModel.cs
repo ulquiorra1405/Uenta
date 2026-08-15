@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using POS.Application.Abstractions;
+using POS.Application.Cash;
 using POS.Application.Products;
 using POS.Application.Receipts;
 using POS.Application.Sales;
@@ -198,10 +199,10 @@ public partial class SaleViewModel : ViewModelBase
     private readonly IReceiptPrinter _receiptPrinter;
     private readonly ReceiptPdfGenerator _pdfGenerator;
     private readonly SettingsService _settingsService;
+    private readonly ICurrentSession _session;
+    private readonly CashSessionService _cashService;
+    private readonly CashSessionTracker _cashTracker;
     private CancellationTokenSource? _debounceCts;
-
-    /// <summary>Usuario temporal: aún no hay login (Fase 1). Se reemplaza con el usuario real.</summary>
-    private const long DemoUserId = 1;
 
     public SaleViewModel(
         ProductService productService,
@@ -209,7 +210,10 @@ public partial class SaleViewModel : ViewModelBase
         SaleService saleService,
         IReceiptPrinter receiptPrinter,
         ReceiptPdfGenerator pdfGenerator,
-        SettingsService settingsService)
+        SettingsService settingsService,
+        ICurrentSession session,
+        CashSessionService cashService,
+        CashSessionTracker cashTracker)
     {
         _productService = productService;
         _categoryService = categoryService;
@@ -217,6 +221,19 @@ public partial class SaleViewModel : ViewModelBase
         _receiptPrinter = receiptPrinter;
         _pdfGenerator = pdfGenerator;
         _settingsService = settingsService;
+        _session = session;
+        _cashService = cashService;
+        _cashTracker = cashTracker;
+        _cashTracker.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(CashSessionTracker.HasOpen) or nameof(CashSessionTracker.Current))
+            {
+                OnPropertyChanged(nameof(CanStartPayment));
+                CobrarCommand.NotifyCanExecuteChanged();
+                SetMethodCommand.NotifyCanExecuteChanged();
+                OpenMixedCommand.NotifyCanExecuteChanged();
+            }
+        };
     }
 
     /// <summary>La vista se suscribe para devolver el foco al buscador (loop de escaneo).</summary>
@@ -666,12 +683,14 @@ public partial class SaleViewModel : ViewModelBase
     }
 
     /// <summary>Se puede iniciar el cobro (COBRAR / EFECTIVO / F8): ticket con líneas, total > 0,
-    /// sin modal abierto y sin línea pendiente sin resolver (regla 3.2).</summary>
-    private bool CanStartPayment() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry && !GlobalDiscountExceedsSubtotal;
+    /// sin modal abierto, sin línea pendiente sin resolver (regla 3.2) y con CAJA ABIERTA (P2.2).</summary>
+    private bool CanStartPayment() => CartLines.Count > 0 && Total > 0 && !IsPaymentOpen && !HasPendingEntry
+        && !GlobalDiscountExceedsSubtotal && _cashTracker.HasOpen;
 
     /// <summary>Elegir método de pago (chips TARJETA/TRANSFERENCIA/MIXTO): mismo bloqueo que cobrar,
     /// pero permitido dentro del modal (ahí IsPaymentOpen ya es true).</summary>
-    private bool CanChooseMethod() => CartLines.Count > 0 && Total > 0 && !HasPendingEntry && !GlobalDiscountExceedsSubtotal;
+    private bool CanChooseMethod() => CartLines.Count > 0 && Total > 0 && !HasPendingEntry
+        && !GlobalDiscountExceedsSubtotal && _cashTracker.HasOpen;
 
     // ─────────────────────────── Cobro ───────────────────────────
 
@@ -773,11 +792,19 @@ public partial class SaleViewModel : ViewModelBase
         if (IsProcessing) return;
         PaymentError = null;
 
+        // Regla P2.2: sin caja abierta no se cobra (defensa en profundidad; la UI
+        // ya bloquea COBRAR vía CanExecute, esto cubre el race con el cierre).
+        if (_cashTracker.Current is null)
+        {
+            PaymentError = "Abra la caja para cobrar.";
+            return;
+        }
+
         var request = new CreateSaleRequest
         {
-            UserId = DemoUserId,
+            UserId = _session.CurrentUserId,
             CustomerId = null,
-            CashSessionId = null,
+            CashSessionId = _cashTracker.Current?.Id,
             GlobalDiscount = GlobalDiscount,
             Items = CartLines.Select(l => new SaleItemRequest
             {
@@ -836,6 +863,7 @@ public partial class SaleViewModel : ViewModelBase
             LastSale = result.Value;
             IsPaymentOpen = false;
             IsResultOpen = true;
+            await RefreshCashAsync();   // el badge de caja sube el efectivo acumulado (P2.2)
             await AutoPrintAfterSaleAsync();
         }
         finally
@@ -954,6 +982,7 @@ public partial class SaleViewModel : ViewModelBase
 
     public override async Task OnNavigatedToAsync()
     {
+        await RefreshCashAsync();
         await LoadCategoriesAsync();
         await LoadProductsAsync();
         try
@@ -961,6 +990,20 @@ public partial class SaleViewModel : ViewModelBase
             AutoPrint = await _settingsService.GetBoolAsync(SettingKeys.AutoPrint, true);
         }
         catch { /* default AutoPrint = true */ }
+    }
+
+    /// <summary>Refresca la caja abierta del usuario desde la DB (entrar a venta, abrir/cerrar/retiro).</summary>
+    private async Task RefreshCashAsync()
+    {
+        try
+        {
+            var session = await _cashService.GetOpenForUserAsync(_session.CurrentUserId);
+            _cashTracker.Set(session);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SaleViewModel] RefreshCash: {ex}");
+        }
     }
 
     private async Task LoadCategoriesAsync()
@@ -999,4 +1042,13 @@ public partial class SaleViewModel : ViewModelBase
         if (IsPaymentOpen && !IsProcessing)
             IsPaymentOpen = false;
     }
+
+    // ─────────────────────────── Caja (P2.2) ───────────────────────────
+
+    // Los comandos de apertura/retiro/cierre viven en MainWindowViewModel (el header
+    // es global). Este VM solo refresca el tracker al entrar a venta y bloquea COBRAR
+    // cuando no hay caja abierta (CanStartPayment + guard en ConfirmPayment).
+
+    /// <summary>True si el usuario activo tiene permiso para cerrar caja (regla P2.1).</summary>
+    public bool CanCloseCash => _session.CurrentUser is { } u && POS.Application.Auth.Permissions.Has(u.Role, POS.Application.Auth.Permissions.CloseCash);
 }

@@ -17,6 +17,10 @@ public class PosDbContext : DbContext
     public DbSet<Sequence> Sequences => Set<Sequence>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Setting> Settings => Set<Setting>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<CashWithdrawal> CashWithdrawals => Set<CashWithdrawal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,6 +68,7 @@ public class PosDbContext : DbContext
         {
             e.Property(p => p.Method).HasConversion<int>();
             e.Property(p => p.Amount).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.HasOne(p => p.Sale).WithMany(s => s.Payments).HasForeignKey(p => p.SaleId);
         });
 
         modelBuilder.Entity<Sequence>(e =>
@@ -89,6 +94,44 @@ public class PosDbContext : DbContext
             e.HasKey(s => s.Key);
             e.Property(s => s.Key).HasMaxLength(100).IsRequired();
             e.Property(s => s.Value).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<User>(e =>
+        {
+            e.ToTable("Users");
+            e.Property(u => u.Username).HasMaxLength(50).IsRequired();
+            e.Property(u => u.DisplayName).HasMaxLength(120).IsRequired();
+            e.Property(u => u.PasswordHash).HasMaxLength(200).IsRequired();
+            e.Property(u => u.Role).HasConversion<int>();
+            e.HasIndex(u => u.Username).IsUnique();
+        });
+
+        modelBuilder.Entity<AuditLog>(e =>
+        {
+            e.ToTable("AuditLogs");
+            e.Property(a => a.Username).HasMaxLength(50);
+            e.Property(a => a.Detail).HasMaxLength(500);
+            e.Property(a => a.Action).HasConversion<int>();
+            e.HasIndex(a => a.CreatedAt);
+        });
+
+        modelBuilder.Entity<CashSession>(e =>
+        {
+            e.ToTable("CashSessions");
+            e.Property(s => s.InitialCash).HasColumnType("decimal(18,2)");
+            e.Property(s => s.FinalCount).HasColumnType("decimal(18,2)");
+            e.Property(s => s.Difference).HasColumnType("decimal(18,2)");
+            e.Property(s => s.Status).HasConversion<int>();
+            e.HasIndex(s => new { s.UserId, s.Status });
+            e.HasOne(s => s.User).WithMany().HasForeignKey(s => s.UserId);
+        });
+
+        modelBuilder.Entity<CashWithdrawal>(e =>
+        {
+            e.ToTable("CashWithdrawals");
+            e.Property(w => w.Amount).HasColumnType("decimal(18,2)");
+            e.Property(w => w.Reason).HasMaxLength(200).IsRequired();
+            e.HasOne(w => w.CashSession).WithMany(s => s.Withdrawals).HasForeignKey(w => w.CashSessionId);
         });
     }
 }

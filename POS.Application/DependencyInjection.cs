@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using POS.Application.Auth;
+using POS.Application.Cash;
 using POS.Application.Products;
 using POS.Application.Sales;
 using POS.Application.Settings;
@@ -14,6 +16,10 @@ public static class DependencyInjection
         services.AddScoped<CategoryService>();
         services.AddScoped<InventoryService>();
         services.AddScoped<SettingsService>();
+        services.AddScoped<AuthService>();
+        services.AddScoped<UserService>();
+        services.AddScoped<AuditService>();
+        services.AddScoped<CashSessionService>();
         return services;
     }
 }

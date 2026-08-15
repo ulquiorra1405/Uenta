@@ -24,11 +24,10 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <!-- Logo Uenta (ico.svg → Geometry inline; WPF no renderiza SVG nativo).
-             Regla: sin dependencias SVG, como el resto de iconos del proyecto. -->
-        <Geometry x:Key="LogoGeometry">
-            M180 91h46c.08 23.357.08 23.357.098 33.393.012 6.82.026 13.64.053 20.46q.032 8.258.039 16.514.004 3.135.021 6.268c.153 30.576-5.862 55.672-27.774 78.365-17.504 17.45-40.517 25.096-64.875 25.438-13.918-.07-27.268-2.757-39.562-9.438l-2.91-1.488C82.9 256.084 76.535 250.526 70 244l-2.473-2.437c-16.14-16.833-23.117-39.668-22.82-62.618l.013-3.84q.022-4.977.074-9.953c.031-3.406.045-6.812.06-10.218.03-6.645.089-13.29.146-19.934h45l.113 10.734q.071 5.199.15 10.396.049 3.588.083 7.175c.034 3.456.087 6.911.142 10.367l.02 3.193c.282 14.568 4.03 26.15 13.996 36.803 8.571 8.008 18.636 11.92 30.246 11.832l2.666-.017C144.792 225.28 150.6 223.78 157 220l2.7-1.54c10.13-6.39 15.6-15.996 18.836-27.337.475-2.171.602-4.104.622-6.324l.03-2.516.017-2.733.03-2.898q.047-4.74.081-9.48l.063-6.575q.083-8.65.153-17.3.092-10.38.19-20.76c.098-10.513.187-21.025.278-31.537 M73 73h42v41H73z M29 64h30v29H29z M73 28h28v28H73z
-        </Geometry>
+        <!-- Iconos de caja y sesión (P2.2/P2.1). Inline: sin dependencias SVG. -->
+        <Geometry x:Key="WithdrawIcon">M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6</Geometry>
+        <Geometry x:Key="CloseCashIcon">M4 4h16v16H4z M4 10h16 M17 12h.01 M7 12h.01 M17 16h.01 M7 16h.01</Geometry>
+        <Geometry x:Key="LogoutIcon">M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9</Geometry>
         <!-- Botón de navegación del sidebar (estilo Swiss).
              TODO el estado activo vive en el template (un solo hogar):
              activo = fondo PrimaryLight + texto PrimaryDark + barra izquierda 3px PrimaryBrush.
@@ -119,7 +118,8 @@
                 <!-- Acciones de barra: toggle sidebar + settings (futuro).
                      El logo/Sección se quitó: el sidebar siempre muestra el mark Uenta
                      y cada pantalla tiene su propio título. -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center"
+                    Visibility="{Binding IsAuthenticated, Converter={StaticResource BoolToVis}}">
                     <Button AutomationProperties.Name="Colapsar panel"
                             shell:WindowChrome.IsHitTestVisibleInChrome="True"
                             Command="{Binding ToggleSidebarCommand}">
@@ -152,26 +152,86 @@
                            Foreground="{StaticResource TextSecondaryBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
 
-                <!-- Grupo de sesión: caja + cajero (siempre visible, antes de los controles).
-                     Demo hasta P2.1; entonces pasará a botones con IsHitTestVisibleInChrome. -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6"
-                            Padding="10,4" Margin="0,0,4,0" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <Ellipse Width="7" Height="7" Fill="{StaticResource PrimaryBrush}" Margin="0,0,6,0"
-                                     VerticalAlignment="Center" />
-                            <TextBlock Text="Caja abierta (demo)" FontSize="11" FontWeight="SemiBold"
-                                       Foreground="{StaticResource PrimaryDarkBrush}" />
-                        </StackPanel>
-                    </Border>
+                <!-- Grupo de sesión: caja + usuario real (P2.1c). El botón Caja abre la
+                     modal de apertura cuando no hay caja; Retiro/Cierre cuando sí la hay. -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                    Visibility="{Binding IsAuthenticated, Converter={StaticResource BoolToVis}}">
+
+                    <!-- Badge de caja (P2.2): abierta = verde con número; cerrada = apagada. -->
+                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Estado de caja"
+                            AutomationProperties.Name="EstadoCaja"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Command="{Binding OpenCashModalCommand}">
+                        <Border Background="{StaticResource PrimaryLightBrush}" CornerRadius="6"
+                                Padding="10,4" Margin="0,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Margin="0,0,6,0" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource MutedBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CashTracker.HasOpen}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource PrimaryDarkBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Caja cerrada" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CashTracker.HasOpen}" Value="True">
+                                                    <Setter Property="Text" Value="{Binding CashTracker.BadgeText}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </Button>
+
+                    <!-- Acciones de caja (solo con caja abierta): retiro y cierre -->
+                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Retiro de caja"
+                            AutomationProperties.Name="RetiroCaja"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Command="{Binding OpenWithdrawModalCommand}"
+                            Visibility="{Binding CashTracker.HasOpen, Converter={StaticResource BoolToVis}}">
+                        <Path Data="{StaticResource WithdrawIcon}"
+                              Stroke="{StaticResource TextPrimaryBrush}"
+                              StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
+                    </Button>
+                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Cerrar caja"
+                            AutomationProperties.Name="CerrarCaja"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Command="{Binding OpenCloseCashModalCommand}"
+                            Visibility="{Binding CashTracker.HasOpen, Converter={StaticResource BoolToVis}}">
+                        <Path Data="{StaticResource CloseCashIcon}"
+                              Stroke="{StaticResource TextPrimaryBrush}"
+                              StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
+                    </Button>
+
                     <Border Width="28" Height="28" CornerRadius="14" Background="{StaticResource PrimaryBrush}"
                             Margin="8,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="C" Foreground="White" FontWeight="Bold" FontSize="12"
+                        <TextBlock Text="{Binding UserInitial}" Foreground="White" FontWeight="Bold" FontSize="12"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <TextBlock Text="Cajero demo" Margin="8,0,20,0" FontSize="12" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                    <Border Width="1" Height="20" Background="{StaticResource BorderBrush}" Margin="0,0,4,0"
+                    <TextBlock Margin="8,0,4,0" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
+                        <Run Text="{Binding UserName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding UserRoleText, Mode=OneWay}" />
+                    </TextBlock>
+                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Cerrar sesión"
+                            AutomationProperties.Name="CerrarSesión"
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Command="{Binding LogoutCommand}">
+                        <Path Data="{StaticResource LogoutIcon}"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
+                    </Button>
+                    <Border Width="1" Height="20" Background="{StaticResource BorderBrush}" Margin="4,0,4,0"
                             VerticalAlignment="Center" />
 
                     <!-- Botones de control de ventana -->
@@ -221,7 +281,8 @@
         <!-- Sidebar (claro, igual paleta que el resto). Con overlay abierto se "funde"
              con el scrim: mismo fondo que la vista y sin borde derecho → el scrim (un
              solo Grid sobre todo) se ve continuo, sin línea en la frontera. -->
-        <Border Grid.Column="0" Width="{Binding SidebarWidth}">
+        <Border Grid.Column="0" Width="{Binding SidebarWidth}"
+            Visibility="{Binding IsAuthenticated, Converter={StaticResource BoolToVis}}">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
@@ -296,14 +357,15 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- Grupo: GESTIÓN -->
+                        <!-- Grupo: GESTIÓN (sidebar dinámico P2.1d: solo lo que el rol permite) -->
                         <TextBlock Text="GESTIÓN" FontSize="10" FontWeight="Bold"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Margin="14,14,0,6"
                                    Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
 
                         <Button Command="{Binding GoCatalogCommand}" ToolTip="Catálogo"
-                                AutomationProperties.Name="Catálogo">
+                                AutomationProperties.Name="Catálogo"
+                                Visibility="{Binding CanManageCatalog, Converter={StaticResource BoolToVis}}">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
                                     <Style.Triggers>
@@ -322,8 +384,30 @@
                             </StackPanel>
                         </Button>
 
+                        <Button Command="{Binding GoUsersCommand}" ToolTip="Usuarios"
+                                AutomationProperties.Name="Usuarios"
+                                Visibility="{Binding CanManageUsers, Converter={StaticResource BoolToVis}}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsUsersActive}" Value="True">
+                                            <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource UsersIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                      StrokeThickness="1.8" Width="17" Height="17" Stretch="Uniform"
+                                      VerticalAlignment="Center" />
+                                <TextBlock Text="Usuarios" Margin="12,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                            </StackPanel>
+                        </Button>
+
                         <Button Command="{Binding GoSettingsCommand}" ToolTip="Ajustes"
-                                AutomationProperties.Name="Ajustes">
+                                AutomationProperties.Name="Ajustes"
+                                Visibility="{Binding CanManageSettings, Converter={StaticResource BoolToVis}}">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
                                     <Style.Triggers>
@@ -344,8 +428,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Footer: sesión/caja (demo; P2.1 conecta a usuario real).
-                     El toggle del sidebar vive ahora en la barra de título. -->
+                <!-- Footer: sesión real + estado de caja (P2.1c). -->
                 <StackPanel Grid.Row="2" Margin="8,0">
                     <Border Height="1" Background="{StaticResource BorderBrush}" Margin="6,0,6,10" />
 
@@ -353,16 +436,36 @@
                                 Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}">
                         <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource PrimaryBrush}"
                                 VerticalAlignment="Center">
-                            <TextBlock Text="C" Foreground="White" FontWeight="Bold" FontSize="13"
+                            <TextBlock Text="{Binding UserInitial}" Foreground="White" FontWeight="Bold" FontSize="13"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="Cajero demo" FontSize="12.5" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding UserName}" FontSize="12.5" FontWeight="SemiBold" />
                             <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}" Margin="0,0,5,0"
-                                         VerticalAlignment="Center" />
-                                <TextBlock Text="Caja abierta" FontSize="10.5"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <Ellipse Width="6" Height="6" Margin="0,0,5,0" VerticalAlignment="Center">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="{StaticResource MutedBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CashTracker.HasOpen}" Value="True">
+                                                    <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock FontSize="10.5" Foreground="{StaticResource TextSecondaryBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Caja cerrada" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CashTracker.HasOpen}" Value="True">
+                                                    <Setter Property="Text" Value="{Binding CashTracker.StatusText}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -384,6 +487,8 @@
         <views:ResultModalView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
         <views:CategoryManagerPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
         <views:ProductEditorPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <!-- Modales de caja: DataContext = MainWindowViewModel (el header es global, no depende de la vista). -->
+        <views:CashModalsView Grid.ColumnSpan="2" />
         </Grid>
     </Grid>
 </Window>

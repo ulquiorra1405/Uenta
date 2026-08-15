@@ -1,5 +1,7 @@
 using POS.Application.Abstractions;
+using POS.Application.Auth;
 using POS.Application.Common;
+using POS.Application.Settings;
 using POS.Domain.Entities;
 using POS.Domain.Enums;
 using POS.Domain.ValueObjects;
@@ -17,16 +19,50 @@ public class SaleService
     private readonly IProductRepository _products;
     private readonly ISaleRepository _sales;
     private readonly IClock _clock;
+    private readonly IUserRepository _users;
+    private readonly ICashSessionRepository _cashSessions;
+    private readonly SettingsService _settings;
+    private readonly AuditService _audit;
 
-    public SaleService(IProductRepository products, ISaleRepository sales, IClock clock)
+    public SaleService(
+        IProductRepository products,
+        ISaleRepository sales,
+        IClock clock,
+        IUserRepository users,
+        ICashSessionRepository cashSessions,
+        SettingsService settings,
+        AuditService audit)
     {
         _products = products;
         _sales = sales;
         _clock = clock;
+        _users = users;
+        _cashSessions = cashSessions;
+        _settings = settings;
+        _audit = audit;
     }
 
     public async Task<Result<SaleDto>> CreateSaleAsync(CreateSaleRequest request, CancellationToken ct = default)
     {
+        // 0. Reglas de caja (P2.2): solo se cobra con caja ABIERTA del usuario.
+        //    El CashSessionId lo resuelve la UI desde la sesión activa; aquí se valida
+        //    que esa caja exista, esté abierta y pertenezca al vendedor.
+        if (request.CashSessionId is null)
+            return Result.Failure<SaleDto>("CASH_CLOSED", "Abra la caja para cobrar.");
+
+        var cashSession = await _cashSessions.GetByIdAsync(request.CashSessionId.Value, ct);
+        if (cashSession is null)
+            return Result.Failure<SaleDto>("CASH_CLOSED", "Abra la caja para cobrar.");
+        if (cashSession.Status == CashSessionStatus.Closed)
+            return Result.Failure<SaleDto>("CASH_CLOSED", "La caja está cerrada. Ábrala para cobrar.");
+        if (cashSession.UserId != request.UserId)
+            return Result.Failure<SaleDto>("CASH_NOT_OWNED", "La caja activa no pertenece a este usuario.");
+
+        // 0b. Tope de descuento por rol (P2.1d): Cajero ≤10%, Supervisor ≤25%, Admin ∞ — configurable.
+        var seller = await _users.GetByIdAsync(request.UserId, ct);
+        if (seller is null)
+            return Result.Failure<SaleDto>("USER_NOT_FOUND", "El vendedor no existe.");
+
         // 1. Validación básica
         if (request.Items.Count == 0)
             return Result.Failure<SaleDto>("SALE_EMPTY", "La venta no tiene productos.");
@@ -79,6 +115,16 @@ public class SaleService
         if (totals.DiscountExceedsSubtotal)
             return Result.Failure<SaleDto>("DISCOUNT_EXCEEDS_TOTAL", "El descuento global supera el total de la venta.");
 
+        // 0c. Validar tope de descuento del rol ANTES de persistir (regla P2.1d).
+        if (request.GlobalDiscount > 0)
+        {
+            var discountPercent = gross.Amount > 0 ? request.GlobalDiscount / gross.Amount * 100m : 0m;
+            var limit = await GetDiscountLimitAsync(seller.Role, ct);
+            if (limit is { } max && discountPercent > max)
+                return Result.Failure<SaleDto>("DISCOUNT_LIMIT_EXCEEDED",
+                    $"El descuento ({discountPercent:N1}%) supera el tope de su rol ({max:N0}%).");
+        }
+
         var total = new Money(totals.Total);
         var itbis = new Money(totals.Itbis);
         var baseImponible = new Money(totals.BaseImponible);
@@ -120,7 +166,11 @@ public class SaleService
 
         var saleId = await _sales.AddAsync(sale, ct);
 
-        // 7. DTO de salida
+        // 7. Auditoría (P2.1f): toda venta queda registrada con usuario y fecha.
+        await _audit.LogAsync(seller.Id, seller.Username, AuditAction.SaleCreated,
+            $"Recibo #{sale.Number} · RD$ {total.Amount:N2} · {items.Count} línea(s)", ct);
+
+        // 8. DTO de salida
         var dto = new SaleDto
         {
             Id = saleId,
@@ -146,5 +196,22 @@ public class SaleService
         };
 
         return Result.Success(dto);
+    }
+
+    /// <summary>
+    /// Tope de descuento global (%) según rol, desde Ajustes (configurable, regla P8).
+    /// Admin y roles sin tope devuelven null (sin límite).
+    /// </summary>
+    private async Task<decimal?> GetDiscountLimitAsync(UserRole role, CancellationToken ct = default)
+    {
+        var key = role switch
+        {
+            UserRole.Cajero => SettingKeys.DiscountLimitCajero,
+            UserRole.Supervisor => SettingKeys.DiscountLimitSupervisor,
+            _ => null
+        };
+        if (key is null) return null;
+        var raw = await _settings.GetIntAsync(key, role == UserRole.Cajero ? 10 : 25, ct);
+        return raw > 0 ? raw : null;
     }
 }

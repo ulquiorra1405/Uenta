@@ -1,6 +1,8 @@
 using POS.Application.Abstractions;
+using POS.Application.Auth;
 using POS.Application.Common;
 using POS.Domain.Entities;
+using POS.Domain.Enums;
 using POS.Domain.ValueObjects;
 
 namespace POS.Application.Products;
@@ -12,8 +14,13 @@ namespace POS.Application.Products;
 public class ProductService
 {
     private readonly IProductRepository _products;
+    private readonly AuditService _audit;
 
-    public ProductService(IProductRepository products) => _products = products;
+    public ProductService(IProductRepository products, AuditService audit)
+    {
+        _products = products;
+        _audit = audit;
+    }
 
     /// <summary>Búsqueda de VENTA: solo productos activos (dropdown, catálogo popup).</summary>
     public async Task<List<ProductDto>> SearchActiveAsync(string? term = null, CancellationToken ct = default)
@@ -78,6 +85,7 @@ public class ProductService
         if (barcode is not null && await _products.ExistsByBarcodeAsync(barcode, request.Id, ct))
             return Result.Failure<ProductDto>("BARCODE_DUPLICATED", $"Ya existe otro producto con el código de barras '{barcode}'.");
 
+        var oldPrice = product.Price.Amount;
         product.Name = request.Name.Trim();
         product.Sku = sku;
         product.Barcode = barcode;
@@ -91,6 +99,14 @@ public class ProductService
 
         await _products.UpdateAsync(product, ct);
         await _products.SaveChangesAsync(ct);
+
+        // Auditoría (P2.1f): solo si el precio de venta cambió.
+        if (oldPrice != request.Price)
+        {
+            await _audit.LogAsync(AuditAction.PriceChanged,
+                $"{product.Name} · RD$ {oldPrice:N2} → RD$ {request.Price:N2}", ct);
+        }
+
         return Result.Success(ToDto(product));
     }
 

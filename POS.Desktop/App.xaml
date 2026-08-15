@@ -45,6 +45,7 @@
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#64748B" />
         <SolidColorBrush x:Key="DangerBrush" Color="#DC2626" />
         <SolidColorBrush x:Key="DangerLightBrush" Color="#FEE2E2" />
+        <SolidColorBrush x:Key="SuccessBrush" Color="#16A34A" />
         <SolidColorBrush x:Key="WarningBrush" Color="#D97706" />
         <SolidColorBrush x:Key="WarningLightBrush" Color="#FEF3C7" />
         <SolidColorBrush x:Key="HeaderBrush" Color="#0F172A" />
@@ -506,6 +507,14 @@
         <Geometry x:Key="PowerIcon">M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10</Geometry>
         <Geometry x:Key="PrinterIcon">M6 9V2h12v7 M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2 M6 14h12v8H6z</Geometry>
         <Geometry x:Key="FileIcon">M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8</Geometry>
+        <Geometry x:Key="UsersIcon">M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75</Geometry>
+        <Geometry x:Key="CashIcon">M2 7h20v10H2z M2 10h20 M17 12h.01 M6 12h.01</Geometry>
+        <!-- Logo Uenta (ico.svg → Geometry inline; WPF no renderiza SVG nativo).
+             Vive en App.xaml: LoginView lo necesita dentro de un DataTemplate, que solo
+             resuelve App.Resources (no Window.Resources). -->
+        <Geometry x:Key="LogoGeometry">
+            M180 91h46c.08 23.357.08 23.357.098 33.393.012 6.82.026 13.64.053 20.46q.032 8.258.039 16.514.004 3.135.021 6.268c.153 30.576-5.862 55.672-27.774 78.365-17.504 17.45-40.517 25.096-64.875 25.438-13.918-.07-27.268-2.757-39.562-9.438l-2.91-1.488C82.9 256.084 76.535 250.526 70 244l-2.473-2.437c-16.14-16.833-23.117-39.668-22.82-62.618l.013-3.84q.022-4.977.074-9.953c.031-3.406.045-6.812.06-10.218.03-6.645.089-13.29.146-19.934h45l.113 10.734q.071 5.199.15 10.396.049 3.588.083 7.175c.034 3.456.087 6.911.142 10.367l.02 3.193c.282 14.568 4.03 26.15 13.996 36.803 8.571 8.008 18.636 11.92 30.246 11.832l2.666-.017C144.792 225.28 150.6 223.78 157 220l2.7-1.54c10.13-6.39 15.6-15.996 18.836-27.337.475-2.171.602-4.104.622-6.324l.03-2.516.017-2.733.03-2.898q.047-4.74.081-9.48l.063-6.575q.083-8.65.153-17.3.092-10.38.19-20.76c.098-10.513.187-21.025.278-31.537 M73 73h42v41H73z M29 64h30v29H29z M73 28h28v28H73z
+        </Geometry>
 
         <!-- Estilos compartidos de la pantalla de venta (migrados de SaleView.xaml,
              P0.5: un solo hogar para los estilos; cero hex hardcodeado en vistas) -->
@@ -592,6 +601,12 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+            <views:LoginView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:UsersViewModel}">
+            <views:UsersView />
         </DataTemplate>
     </Application.Resources>
 </Application>

@@ -2,23 +2,41 @@ using System.ComponentModel;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using POS.Application.Abstractions;
+using POS.Application.Auth;
+using POS.Application.Cash;
+using POS.Application.Sales;
+using POS.Domain.Entities;
+using POS.Domain.Enums;
 
 namespace POS.Desktop.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly DispatcherTimer _clockTimer;
+    private readonly ICurrentSession _session;
+    private readonly CashSessionService _cashService;
     private ViewModelBase? _observedVm;
 
+    public CashSessionTracker CashTracker { get; }
     public INavigationService Navigation { get; }
 
-    public MainWindowViewModel(INavigationService navigation)
+    public MainWindowViewModel(
+        INavigationService navigation,
+        ICurrentSession session,
+        CashSessionService cashService,
+        CashSessionTracker cashTracker)
     {
         Navigation = navigation;
+        _session = session;
+        _cashService = cashService;
+        CashTracker = cashTracker;
         GoCatalogCommand = new AsyncRelayCommand(GoCatalogAsync);
         GoSalesCommand = new AsyncRelayCommand(GoSalesAsync);
         GoSettingsCommand = new AsyncRelayCommand(GoSettingsAsync);
+        GoUsersCommand = new AsyncRelayCommand(GoUsersAsync);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
+        LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
         Navigation.CurrentChanged += _ =>
         {
@@ -28,6 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsCatalogActive));
             OnPropertyChanged(nameof(IsSalesActive));
             OnPropertyChanged(nameof(IsSettingsActive));
+            OnPropertyChanged(nameof(IsUsersActive));
             ObserveOverlayFlags();
         };
 
@@ -79,9 +98,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         IsAnyOverlayOpen = Navigation.Current switch
         {
-            SaleViewModel s => s.IsCatalogOpen || s.IsPaymentOpen || s.IsResultOpen,
+            SaleViewModel s => s.IsCatalogOpen || s.IsPaymentOpen || s.IsResultOpen || IsAnyCashModalOpen,
             ProductListViewModel p => p.IsCategoryManagerOpen || p.IsProductEditorOpen,
-            _ => false,
+            _ => IsAnyCashModalOpen,
         };
     }
 
@@ -106,13 +125,21 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Ajustes: {ex}"); }
     }
 
+    private async Task GoUsersAsync()
+    {
+        try { await Navigation.NavigateToAsync<UsersViewModel>(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Usuarios: {ex}"); }
+    }
+
     /// <summary>Vista actual; el ContentControl del MainWindow bindea aquí.</summary>
     public ViewModelBase? Current => Navigation.Current;
 
     public AsyncRelayCommand GoCatalogCommand { get; }
     public AsyncRelayCommand GoSalesCommand { get; }
     public AsyncRelayCommand GoSettingsCommand { get; }
+    public AsyncRelayCommand GoUsersCommand { get; }
     public RelayCommand ToggleSidebarCommand { get; }
+    public AsyncRelayCommand LogoutCommand { get; }
 
     /// <summary>Sidebar colapsado a solo iconos (64px) o expandido (210px).</summary>
     [ObservableProperty]
@@ -126,6 +153,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsCatalogActive => Current is ProductListViewModel;
     public bool IsSalesActive => Current is SaleViewModel;
     public bool IsSettingsActive => Current is SettingsViewModel;
+    public bool IsUsersActive => Current is UsersViewModel;
 
     partial void OnIsSidebarCollapsedChanged(bool value)
     {
@@ -133,7 +161,232 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsCatalogActive));
         OnPropertyChanged(nameof(IsSalesActive));
         OnPropertyChanged(nameof(IsSettingsActive));
+        OnPropertyChanged(nameof(IsUsersActive));
     }
 
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
+
+    // ─────────────────────────── Sesión / permisos (P2.1) ───────────────────────────
+
+    /// <summary>True si hay sesión activa (oculta sidebar/header de sesión en el login).</summary>
+    public bool IsAuthenticated => _session.IsAuthenticated;
+
+    /// <summary>Nombre del usuario autenticado (header y footer del sidebar).</summary>
+    public string UserName => _session.CurrentUser?.DisplayName ?? "Sin sesión";
+
+    /// <summary>Rol del usuario autenticado, en español.</summary>
+    public string UserRoleText => _session.CurrentUser?.Role.ToString() ?? "—";
+
+    /// <summary>Inicial del nombre para el avatar circular.</summary>
+    public string UserInitial => string.IsNullOrEmpty(UserName) ? "?" : UserName[..1].ToUpperInvariant();
+
+    /// <summary>¿El usuario puede gestionar catálogo (P2.1: sidebar dinámico)?</summary>
+    public bool CanManageCatalog => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.ManageCatalog);
+
+    /// <summary>¿El usuario puede gestionar usuarios? Solo Admin.</summary>
+    public bool CanManageUsers => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.ManageUsers);
+
+    /// <summary>¿El usuario puede ver los ajustes? (imprimir/configuración del negocio).</summary>
+    public bool CanManageSettings => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.ManageSettings);
+
+    /// <summary>¿El usuario puede cerrar caja? Controla el botón de cierre en el header.</summary>
+    public bool CanCloseCash => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.CloseCash);
+
+    /// <summary>Se notifica cuando cambia la sesión (login/logout).</summary>
+    public void NotifySessionChanged()
+    {
+        OnPropertyChanged(nameof(IsAuthenticated));
+        OnPropertyChanged(nameof(UserName));
+        OnPropertyChanged(nameof(UserRoleText));
+        OnPropertyChanged(nameof(UserInitial));
+        OnPropertyChanged(nameof(CanManageCatalog));
+        OnPropertyChanged(nameof(CanManageUsers));
+        OnPropertyChanged(nameof(CanManageSettings));
+        OnPropertyChanged(nameof(CanCloseCash));
+    }
+
+    /// <summary>Cerrar sesión: limpia la sesión, la caja visible y vuelve al login.</summary>
+    private async Task LogoutAsync()
+    {
+        _session.SignOut();
+        CashTracker.Set(null);
+        NotifySessionChanged();
+        try { await Navigation.NavigateToAsync<LoginViewModel>(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Logout: {ex}"); }
+    }
+
+    // ─────────────────────────── Caja (P2.2) ───────────────────────────
+
+    /// <summary>Alguna modal de caja abierta (el sidebar se funde con el scrim).</summary>
+    public bool IsAnyCashModalOpen => IsCashOpenModal || IsWithdrawModalOpen || IsCloseCashModalOpen;
+
+    [ObservableProperty]
+    private bool _isCashOpenModal;
+
+    [ObservableProperty]
+    private string _openCashText = string.Empty;
+
+    [ObservableProperty]
+    private string? _cashError;
+
+    [ObservableProperty]
+    private bool _isWithdrawModalOpen;
+
+    [ObservableProperty]
+    private string _withdrawAmountText = string.Empty;
+
+    [ObservableProperty]
+    private string _withdrawReason = string.Empty;
+
+    [ObservableProperty]
+    private bool _isCloseCashModalOpen;
+
+    [ObservableProperty]
+    private string _closeCountText = string.Empty;
+
+    [ObservableProperty]
+    private string? _lastCloseResult;
+
+    [RelayCommand]
+    private void ClearLastCloseResult() => LastCloseResult = null;
+
+    partial void OnIsCashOpenModalChanged(bool value) => NotifyCashModalChanged();
+    partial void OnIsWithdrawModalOpenChanged(bool value) => NotifyCashModalChanged();
+    partial void OnIsCloseCashModalOpenChanged(bool value) => NotifyCashModalChanged();
+
+    private void NotifyCashModalChanged()
+    {
+        OnPropertyChanged(nameof(IsAnyCashModalOpen));
+        UpdateIsAnyOverlayOpen();
+    }
+
+    [RelayCommand]
+    private void OpenCashModal()
+    {
+        CashError = null;
+        LastCloseResult = null;
+        OpenCashText = "0";
+        IsCashOpenModal = true;
+    }
+
+    [RelayCommand]
+    private void CloseCashModal() => IsCashOpenModal = false;
+
+    [RelayCommand]
+    private async Task ConfirmOpenCashAsync()
+    {
+        CashError = null;
+        var initial = ParseAmount(OpenCashText);
+        if (initial < 0)
+        {
+            CashError = "El fondo inicial no puede ser negativo.";
+            return;
+        }
+        var result = await _cashService.OpenAsync(new OpenCashRequest(_session.CurrentUserId, initial));
+        if (!result.IsSuccess)
+        {
+            CashError = result.ErrorMessage;
+            return;
+        }
+        IsCashOpenModal = false;
+        await RefreshCashAsync();
+    }
+
+    [RelayCommand]
+    private void OpenWithdrawModal()
+    {
+        CashError = null;
+        WithdrawAmountText = string.Empty;
+        WithdrawReason = string.Empty;
+        IsWithdrawModalOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseWithdrawModal() => IsWithdrawModalOpen = false;
+
+    [RelayCommand]
+    private async Task ConfirmWithdrawAsync()
+    {
+        if (CashTracker.Current is null) return;
+        CashError = null;
+        var amount = ParseAmount(WithdrawAmountText);
+        if (amount <= 0)
+        {
+            CashError = "Ingrese un monto válido.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(WithdrawReason))
+        {
+            CashError = "El motivo es obligatorio.";
+            return;
+        }
+        var result = await _cashService.WithdrawAsync(new WithdrawRequest(
+            CashTracker.Current.Id, amount, WithdrawReason.Trim()));
+        if (!result.IsSuccess)
+        {
+            CashError = result.ErrorMessage;
+            return;
+        }
+        IsWithdrawModalOpen = false;
+        await RefreshCashAsync();
+    }
+
+    [RelayCommand]
+    private void OpenCloseCashModal()
+    {
+        if (CashTracker.Current is null) return;
+        CashError = null;
+        LastCloseResult = null;
+        CloseCountText = CashTracker.Current.ExpectedCash.ToString("N2");
+        IsCloseCashModalOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseCloseCashModal() => IsCloseCashModalOpen = false;
+
+    [RelayCommand]
+    private async Task ConfirmCloseCashAsync()
+    {
+        if (CashTracker.Current is null) return;
+        CashError = null;
+        var count = ParseAmount(CloseCountText);
+        if (count < 0)
+        {
+            CashError = "El conteo no puede ser negativo.";
+            return;
+        }
+        var result = await _cashService.CloseAsync(new CloseCashRequest(
+            CashTracker.Current.Id, count));
+        if (!result.IsSuccess)
+        {
+            CashError = result.ErrorMessage;
+            return;
+        }
+        IsCloseCashModalOpen = false;
+        if (result.Value is { } closed)
+            LastCloseResult = $"Caja #{closed.Id} cerrada · Diferencia RD$ {closed.Difference:N2}";
+        await RefreshCashAsync();
+    }
+
+    private static decimal ParseAmount(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        var normalized = text.Replace(',', '.').Trim();
+        return decimal.TryParse(normalized, System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
+    }
+
+    /// <summary>Refresca la caja abierta del usuario desde la DB (tras abrir/retirar/cerrar).</summary>
+    public async Task RefreshCashAsync()
+    {
+        try
+        {
+            var session = await _cashService.GetOpenForUserAsync(_session.CurrentUserId);
+            CashTracker.Set(session);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[MainWindow] RefreshCash: {ex}");
+        }
+    }
 }

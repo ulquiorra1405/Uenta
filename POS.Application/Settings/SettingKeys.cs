@@ -23,6 +23,12 @@ public static class SettingKeys
 
     /// <summary>Pie de recibo (mensaje de agradecimiento/personalizado).</summary>
     public const string ReceiptFooter = "Receipt.Footer";
+
+    /// <summary>Tope de descuento global (%) para el rol Cajero (Fase 1B, P2.1d).</summary>
+    public const string DiscountLimitCajero = "Discount.Limit.Cajero";
+
+    /// <summary>Tope de descuento global (%) para el rol Supervisor (Fase 1B, P2.1d).</summary>
+    public const string DiscountLimitSupervisor = "Discount.Limit.Supervisor";
 }
 
 /// <summary>Datos de negocio + preferencias de impresión listos para el recibo.</summary>

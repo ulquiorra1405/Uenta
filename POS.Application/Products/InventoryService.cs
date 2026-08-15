@@ -1,4 +1,5 @@
 using POS.Application.Abstractions;
+using POS.Application.Auth;
 using POS.Application.Common;
 using POS.Domain.Entities;
 using POS.Domain.Enums;
@@ -15,15 +16,18 @@ public class InventoryService
     private readonly IProductRepository _products;
     private readonly IStockMovementRepository _movements;
     private readonly IClock _clock;
+    private readonly AuditService _audit;
 
     public InventoryService(
         IProductRepository products,
         IStockMovementRepository movements,
-        IClock clock)
+        IClock clock,
+        AuditService audit)
     {
         _products = products;
         _movements = movements;
         _clock = clock;
+        _audit = audit;
     }
 
     /// <summary>
@@ -75,7 +79,11 @@ public class InventoryService
         await _movements.AddAsync(movement, ct);
         await _movements.SaveChangesAsync(ct);
 
-        // 5. DTO de salida (Id asignado por la persistencia)
+        // 5. Auditoría (P2.1f): todo ajuste de stock queda registrado con usuario y motivo.
+        await _audit.LogAsync(request.UserId, null, AuditAction.StockAdjusted,
+            $"{product.Name} · {request.Type} {request.Quantity:N0} · {request.Reason.Trim()}", ct);
+
+        // 6. DTO de salida (Id asignado por la persistencia)
         var dto = new StockMovementDto
         {
             Id = movement.Id,

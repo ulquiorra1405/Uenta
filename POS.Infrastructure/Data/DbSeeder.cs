@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using POS.Domain.Entities;
+using POS.Domain.Enums;
 using POS.Domain.ValueObjects;
+using POS.Infrastructure.Services;
 
 namespace POS.Infrastructure.Data;
 
@@ -18,6 +20,42 @@ public static class DbSeeder
         if (!await db.Sequences.AnyAsync())
         {
             db.Sequences.Add(new Sequence { Id = 1, LastNumber = 0 });
+            await db.SaveChangesAsync();
+        }
+
+        // Usuarios demo (P2.1a). Contraseñas por defecto documentadas en PLAN.md;
+        // la gestión real (cambio/reset) llega con P2.1e (solo Admin).
+        var hasher = new PasswordHasher();
+        if (!await db.Users.AnyAsync())
+        {
+            db.Users.AddRange(
+                new User
+                {
+                    Username = "admin",
+                    DisplayName = "Administrador",
+                    PasswordHash = hasher.Hash("admin123"),
+                    Role = UserRole.Admin,
+                    IsActive = true,
+                    CreatedAt = DateTimeOffset.Now
+                },
+                new User
+                {
+                    Username = "supervisor",
+                    DisplayName = "Supervisor",
+                    PasswordHash = hasher.Hash("super123"),
+                    Role = UserRole.Supervisor,
+                    IsActive = true,
+                    CreatedAt = DateTimeOffset.Now
+                },
+                new User
+                {
+                    Username = "cajero",
+                    DisplayName = "Cajero",
+                    PasswordHash = hasher.Hash("cajero123"),
+                    Role = UserRole.Cajero,
+                    IsActive = true,
+                    CreatedAt = DateTimeOffset.Now
+                });
             await db.SaveChangesAsync();
         }
 
