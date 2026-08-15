@@ -17,6 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Navigation = navigation;
         GoCatalogCommand = new AsyncRelayCommand(GoCatalogAsync);
         GoSalesCommand = new AsyncRelayCommand(GoSalesAsync);
+        GoSettingsCommand = new AsyncRelayCommand(GoSettingsAsync);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
 
         Navigation.CurrentChanged += _ =>
@@ -26,6 +27,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(Current));
             OnPropertyChanged(nameof(IsCatalogActive));
             OnPropertyChanged(nameof(IsSalesActive));
+            OnPropertyChanged(nameof(IsSettingsActive));
             ObserveOverlayFlags();
         };
 
@@ -98,11 +100,18 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Ventas: {ex}"); }
     }
 
+    private async Task GoSettingsAsync()
+    {
+        try { await Navigation.NavigateToAsync<SettingsViewModel>(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Ajustes: {ex}"); }
+    }
+
     /// <summary>Vista actual; el ContentControl del MainWindow bindea aquí.</summary>
     public ViewModelBase? Current => Navigation.Current;
 
     public AsyncRelayCommand GoCatalogCommand { get; }
     public AsyncRelayCommand GoSalesCommand { get; }
+    public AsyncRelayCommand GoSettingsCommand { get; }
     public RelayCommand ToggleSidebarCommand { get; }
 
     /// <summary>Sidebar colapsado a solo iconos (64px) o expandido (210px).</summary>
@@ -116,12 +125,14 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <remarks>El editor de producto es un popup dentro de la lista; no cambia la sección.</remarks>
     public bool IsCatalogActive => Current is ProductListViewModel;
     public bool IsSalesActive => Current is SaleViewModel;
+    public bool IsSettingsActive => Current is SettingsViewModel;
 
     partial void OnIsSidebarCollapsedChanged(bool value)
     {
         OnPropertyChanged(nameof(SidebarWidth));
         OnPropertyChanged(nameof(IsCatalogActive));
         OnPropertyChanged(nameof(IsSalesActive));
+        OnPropertyChanged(nameof(IsSettingsActive));
     }
 
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;

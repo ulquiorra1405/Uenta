@@ -52,8 +52,53 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <Button Content="Nueva venta  (Enter)" Height="46" FontSize="15" Margin="0,18,0,0"
-                        Command="{Binding NewSaleCommand}" />
+                <!-- Aviso de impresión (no bloqueante; la venta ya quedó persistida) -->
+                <Border Background="{StaticResource DangerLightBrush}" CornerRadius="6"
+                        Padding="8,6" Margin="0,12,0,0" Visibility="{Binding PrintError, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding PrintError}" FontSize="11" Foreground="{StaticResource DangerBrush}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Estado de impresión (ok informativo) -->
+                <TextBlock Text="{Binding PrintStatus}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" Margin="0,10,0,0"
+                           Visibility="{Binding PrintStatus, Converter={StaticResource NullToVis}}" />
+
+                <!-- Acciones de recibo -->
+                <Grid Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="1.2*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Height="46" FontSize="13.5"
+                            AutomationProperties.Name="Imprimir recibo"
+                            Command="{Binding PrintReceiptCommand}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Path Data="{StaticResource PrinterIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                  StrokeThickness="1.6" Width="15" Height="15" Stretch="Uniform"
+                                  VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="Imprimir" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="2" Height="46" FontSize="13.5"
+                            AutomationProperties.Name="Guardar PDF"
+                            Command="{Binding SavePdfCommand}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Path Data="{StaticResource FileIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                  StrokeThickness="1.6" Width="15" Height="15" Stretch="Uniform"
+                                  VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock Text="PDF" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="4" Height="46" FontSize="13.5"
+                            AutomationProperties.Name="Nueva venta" ToolTip="Nueva venta (Enter)"
+                            Command="{Binding NewSaleCommand}">
+                        <TextBlock Text="Nueva venta" VerticalAlignment="Center" />
+                    </Button>
+                </Grid>
             </StackPanel>
         </Border>
     </Grid>

@@ -7,6 +7,7 @@ using POS.Domain.Enums;
 using POS.Domain.ValueObjects;
 using POS.Infrastructure;
 using POS.Infrastructure.Data;
+using POS.Infrastructure.Services;
 
 namespace POS.Tests;
 
@@ -28,6 +29,9 @@ public class SaleServiceTests : IDisposable
         var services = new ServiceCollection();
         services.AddApplication();
         services.AddInfrastructure($"Data Source={_dbPath};Pooling=False");
+        // Los tests no tocan impresoras del sistema: usan el printer de consola
+        // (el DI de la app resuelve la térmica real por defecto).
+        services.AddScoped<IReceiptPrinter, ConsoleReceiptPrinter>();
         _services = services.BuildServiceProvider();
 
         _db = _services.GetRequiredService<PosDbContext>();

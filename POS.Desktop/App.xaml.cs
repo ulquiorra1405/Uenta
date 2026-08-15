@@ -39,6 +39,7 @@ public partial class App : System.Windows.Application
         services.AddTransient<ProductListViewModel>();
         services.AddTransient<ProductEditViewModel>();
         services.AddTransient<SaleViewModel>();
+        services.AddTransient<SettingsViewModel>();
         services.AddTransient<PlaceholderViewModel>();
 
         _services = services.BuildServiceProvider();

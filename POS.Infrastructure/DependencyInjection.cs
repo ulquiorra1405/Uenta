@@ -17,8 +17,10 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ISaleRepository, SaleRepository>();
         services.AddScoped<IStockMovementRepository, StockMovementRepository>();
+        services.AddScoped<ISettingRepository, SettingRepository>();
         services.AddScoped<IClock, SystemClock>();
-        services.AddScoped<IReceiptPrinter, ConsoleReceiptPrinter>();
+        services.AddScoped<IReceiptPrinter, ThermalReceiptPrinter>();
+        services.AddScoped<ReceiptPdfGenerator>();
 
         return services;
     }

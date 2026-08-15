@@ -137,9 +137,10 @@
                               Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
                     </Button>
-                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Configuración (próximamente)"
+                    <Button Style="{StaticResource TitleBarButton}" ToolTip="Configuración"
                             AutomationProperties.Name="Configuración"
-                            shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Command="{Binding GoSettingsCommand}">
                         <Path Data="{StaticResource SettingsIcon}"
                               Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                               StrokeThickness="1.5" Width="15" Height="15" Stretch="Uniform" />
@@ -317,6 +318,26 @@
                                       StrokeThickness="1.8" Width="17" Height="17" Stretch="Uniform"
                                       VerticalAlignment="Center" />
                                 <TextBlock Text="Catálogo" Margin="12,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding GoSettingsCommand}" ToolTip="Ajustes"
+                                AutomationProperties.Name="Ajustes">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SidebarNavButton}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSettingsActive}" Value="True">
+                                            <Setter Property="local:SidebarNav.IsActive" Value="True" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource SettingsIcon}" Stroke="{StaticResource TextPrimaryBrush}"
+                                      StrokeThickness="1.8" Width="17" Height="17" Stretch="Uniform"
+                                      VerticalAlignment="Center" />
+                                <TextBlock Text="Ajustes" Margin="12,0,0,0" VerticalAlignment="Center"
                                            Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource InverseBoolToVis}}" />
                             </StackPanel>
                         </Button>

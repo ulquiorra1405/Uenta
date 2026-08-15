@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using POS.Application.Products;
 using POS.Application.Sales;
+using POS.Application.Settings;
 
 namespace POS.Application;
 
@@ -12,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<ProductService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<InventoryService>();
+        services.AddScoped<SettingsService>();
         return services;
     }
 }

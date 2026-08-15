@@ -1,5 +1,6 @@
 using POS.Application.Receipts;
 using POS.Application.Sales;
+using POS.Application.Settings;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -15,6 +16,14 @@ namespace POS.Infrastructure.Services;
 /// </summary>
 public class ReceiptPdfGenerator
 {
+    private readonly SettingsService? _settings;
+
+    /// <summary>Constructor con DI (app): inyecta datos de negocio al recibo.</summary>
+    public ReceiptPdfGenerator(SettingsService settings) => _settings = settings;
+
+    /// <summary>Constructor sin DI (tests/consola): recibo sin datos de negocio.</summary>
+    public ReceiptPdfGenerator() { }
+
     static ReceiptPdfGenerator()
     {
         // Licencia Community: gratis para empresas < 1M USD de ingresos anuales.
@@ -24,7 +33,8 @@ public class ReceiptPdfGenerator
     /// <summary>Genera el PDF del recibo de una venta (bytes listos para guardar).</summary>
     public byte[] Generate(SaleDto sale)
     {
-        var receipt = ReceiptContentBuilder.Build(sale);
+        var settings = _settings?.GetReceiptSettingsAsync().GetAwaiter().GetResult();
+        var receipt = ReceiptContentBuilder.Build(sale, settings);
         var lines = receipt.TrimEnd('\n').Split('\n');
 
         var document = Document.Create(container =>

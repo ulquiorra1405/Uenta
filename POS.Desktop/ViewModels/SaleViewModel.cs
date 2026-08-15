@@ -1,10 +1,16 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
+using POS.Application.Abstractions;
 using POS.Application.Products;
+using POS.Application.Receipts;
 using POS.Application.Sales;
+using POS.Application.Settings;
 using POS.Domain.Enums;
+using POS.Infrastructure.Services;
 
 namespace POS.Desktop.ViewModels;
 
@@ -189,16 +195,28 @@ public partial class SaleViewModel : ViewModelBase
     private readonly ProductService _productService;
     private readonly CategoryService _categoryService;
     private readonly SaleService _saleService;
+    private readonly IReceiptPrinter _receiptPrinter;
+    private readonly ReceiptPdfGenerator _pdfGenerator;
+    private readonly SettingsService _settingsService;
     private CancellationTokenSource? _debounceCts;
 
     /// <summary>Usuario temporal: aún no hay login (Fase 1). Se reemplaza con el usuario real.</summary>
     private const long DemoUserId = 1;
 
-    public SaleViewModel(ProductService productService, CategoryService categoryService, SaleService saleService)
+    public SaleViewModel(
+        ProductService productService,
+        CategoryService categoryService,
+        SaleService saleService,
+        IReceiptPrinter receiptPrinter,
+        ReceiptPdfGenerator pdfGenerator,
+        SettingsService settingsService)
     {
         _productService = productService;
         _categoryService = categoryService;
         _saleService = saleService;
+        _receiptPrinter = receiptPrinter;
+        _pdfGenerator = pdfGenerator;
+        _settingsService = settingsService;
     }
 
     /// <summary>La vista se suscribe para devolver el foco al buscador (loop de escaneo).</summary>
@@ -818,6 +836,7 @@ public partial class SaleViewModel : ViewModelBase
             LastSale = result.Value;
             IsPaymentOpen = false;
             IsResultOpen = true;
+            await AutoPrintAfterSaleAsync();
         }
         finally
         {
@@ -833,6 +852,87 @@ public partial class SaleViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isResultOpen;
 
+    /// <summary>Impresión en curso (bloquea solo el botón Imprimir, nunca la venta).</summary>
+    [ObservableProperty]
+    private bool _isPrinting;
+
+    /// <summary>Error de impresión no bloqueante (la venta ya quedó persistida).</summary>
+    [ObservableProperty]
+    private string? _printError;
+
+    /// <summary>Mensaje informativo de impresión (ej.: "Recibo enviado a X").</summary>
+    [ObservableProperty]
+    private string? _printStatus;
+
+    /// <summary>¿Imprimir recibo automáticamente al completar la venta? (Ajustes, P1.3).</summary>
+    [ObservableProperty]
+    private bool _autoPrint = true;
+
+    partial void OnIsPrintingChanged(bool value)
+    {
+        PrintReceiptCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPrintReceipt))]
+    private async Task PrintReceiptAsync()
+    {
+        if (LastSale is null) return;
+        IsPrinting = true;
+        PrintError = null;
+        PrintStatus = null;
+        try
+        {
+            await _receiptPrinter.PrintReceiptAsync(LastSale);
+            PrintStatus = "Recibo enviado a la impresora.";
+        }
+        catch (Exception ex)
+        {
+            // Regla dura: la impresión NUNCA falla la venta. Aviso no bloqueante.
+            PrintError = ex.Message;
+        }
+        finally
+        {
+            IsPrinting = false;
+        }
+    }
+
+    private bool CanPrintReceipt() => LastSale is not null && !IsPrinting;
+
+    [RelayCommand]
+    private async Task SavePdfAsync()
+    {
+        if (LastSale is null) return;
+        PrintError = null;
+        PrintStatus = null;
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Guardar recibo como PDF",
+            Filter = "PDF (*.pdf)|*.pdf",
+            FileName = $"Uenta-recibo-{LastSale.Number}.pdf",
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        try
+        {
+            var bytes = _pdfGenerator.Generate(LastSale);
+            await File.WriteAllBytesAsync(dialog.FileName, bytes);
+            PrintStatus = $"Recibo guardado en {dialog.FileName}";
+        }
+        catch (Exception ex)
+        {
+            PrintError = ex.Message;
+        }
+    }
+
+    /// <summary>Impresión automática tras cobrar (Ajustes). Nunca bloquea el flujo.</summary>
+    private async Task AutoPrintAfterSaleAsync()
+    {
+        if (!AutoPrint || LastSale is null) return;
+        await PrintReceiptAsync();
+    }
+
     [RelayCommand]
     private void NewSale()
     {
@@ -846,6 +946,8 @@ public partial class SaleViewModel : ViewModelBase
         IsSuggestionsOpen = false;
         LastSale = null;
         IsResultOpen = false;
+        PrintError = null;
+        PrintStatus = null;
         RecalculateTotals();
         FocusSearchRequested?.Invoke();
     }
@@ -854,6 +956,11 @@ public partial class SaleViewModel : ViewModelBase
     {
         await LoadCategoriesAsync();
         await LoadProductsAsync();
+        try
+        {
+            AutoPrint = await _settingsService.GetBoolAsync(SettingKeys.AutoPrint, true);
+        }
+        catch { /* default AutoPrint = true */ }
     }
 
     private async Task LoadCategoriesAsync()

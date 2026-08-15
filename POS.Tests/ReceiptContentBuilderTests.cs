@@ -1,5 +1,6 @@
 using POS.Application.Receipts;
 using POS.Application.Sales;
+using POS.Application.Settings;
 using POS.Domain.Enums;
 
 namespace POS.Tests;
@@ -128,5 +129,37 @@ public class ReceiptContentBuilderTests
 
         Assert.All(lines, line => Assert.True(line.Length <= ReceiptContentBuilder.Width,
             $"Línea excede {ReceiptContentBuilder.Width} chars: '{line}' ({line.Length})"));
+    }
+
+    [Fact]
+    public void Build_ConDatosDeNegocio_EncabezadoYPiePersonalizado()
+    {
+        var sale = SampleSale();
+        var settings = new ReceiptSettingsDto
+        {
+            BusinessName = "Colmado La Esquina",
+            BusinessRnc = "130-12345-6",
+            BusinessAddress = "Av. Duarte 45, Santo Domingo",
+            ReceiptFooter = "¡Vuelva pronto!",
+        };
+
+        var receipt = ReceiptContentBuilder.Build(sale, settings);
+
+        Assert.Contains("Colmado La Esquina", receipt);
+        Assert.Contains("RNC: 130-12345-6", receipt);
+        Assert.Contains("Av. Duarte 45, Santo Domingo", receipt);
+        Assert.Contains("¡Vuelva pronto!", receipt);
+        Assert.DoesNotContain("¡Gracias por su compra!", receipt); // pie personalizado reemplaza al default
+    }
+
+    [Fact]
+    public void Build_SinDatosDeNegocio_NoCambiaLayout()
+    {
+        var sale = SampleSale();
+        var withNull = ReceiptContentBuilder.Build(sale, null);
+        var withoutOverload = ReceiptContentBuilder.Build(sale);
+
+        Assert.Equal(withoutOverload, withNull);
+        Assert.DoesNotContain("Colmado", withNull);
     }
 }

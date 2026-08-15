@@ -1,5 +1,6 @@
 using System.Text;
 using POS.Application.Sales;
+using POS.Application.Settings;
 using POS.Domain.Enums;
 
 namespace POS.Application.Receipts;
@@ -17,12 +18,34 @@ public static class ReceiptContentBuilder
 
     private const string Separator = "------------------------------------------"; // Width
 
-    /// <summary>Genera el recibo completo terminado en '\n'.</summary>
-    public static string Build(SaleDto sale)
+    /// <summary>Genera el recibo completo terminado en '\n' (sin datos de negocio).</summary>
+    public static string Build(SaleDto sale) => Build(sale, null);
+
+    /// <summary>
+    /// Genera el recibo completo terminado en '\n'. Con <paramref name="settings"/>
+    /// opcional: encabezado del negocio (nombre/RNC/dirección) y pie de recibo
+    /// personalizado (Ajustes, P1.3). Sin settings = comportamiento idéntico a v1.
+    /// </summary>
+    public static string Build(SaleDto sale, ReceiptSettingsDto? settings)
     {
         var sb = new StringBuilder();
 
         void Add(string s) => sb.Append(s).Append('\n');
+
+        var business = settings is not null && !string.IsNullOrWhiteSpace(settings.BusinessName)
+            ? settings
+            : null;
+
+        if (business is not null)
+        {
+            Add(Separator);
+            Add(Center(business.BusinessName));
+            if (!string.IsNullOrWhiteSpace(business.BusinessRnc))
+                Add(Center($"RNC: {business.BusinessRnc}"));
+            if (!string.IsNullOrWhiteSpace(business.BusinessAddress))
+                Add(Center(business.BusinessAddress));
+            Add(Separator);
+        }
 
         Add(Separator);
         Add(Center("UENTA — RECIBO DE VENTA"));
@@ -46,7 +69,11 @@ public static class ReceiptContentBuilder
         foreach (var p in sale.Payments)
             Add($"{"Pago " + MethodName(p.Method) + ":",-15}{p.Amount.Amount,10:N2}");
         Add(Separator);
-        Add(Center("¡Gracias por su compra!"));
+
+        var footer = business is not null && !string.IsNullOrWhiteSpace(business.ReceiptFooter)
+            ? business.ReceiptFooter
+            : "¡Gracias por su compra!";
+        Add(Center(footer));
         Add(Separator);
 
         return sb.ToString();
