@@ -388,6 +388,22 @@
 - **Merge/Reemplaza:** nada (feature nueva de Fase 1).
 - **Verificación:** datos de la DB demo → cifras correctas verificadas por consulta SQL
   independiente.
+- **Estado:** ✅ HECHO (15-ago-2026). `IReportRepository` + `ReportRepository`
+  (consulta de ventas completadas con Items+User; lección: EF Core 9 + SQLite no
+  traduce comparaciones `DateTimeOffset` en el WHERE → se materializa y filtra en
+  memoria, aceptable para volumen local). `ReportService`: `GetDailySummaryAsync`
+  (total/tickets/promedio/ítems del día natural), `GetPeriodSummaryAsync`,
+  `GetTopProductsAsync` (top N por cantidad, con monto), `GetSalesByUserAsync`
+  (agrupado por vendedor). Lección: `Money` (record struct) no implementa
+  `IComparable` → ordenar por `.Amount`. Desktop: `ReportsViewModel` + `ReportsView`
+  (dashboard): 4 KPIs del día (Ventas, Tickets, Ticket promedio, Ítems vendidos),
+  selector de periodo Hoy/7/30 días (chips estilo MethodChip), tabla Top 5 productos
+  y tabla Ventas por vendedor. Permiso: `CanManageReports` = Sell (todos los roles,
+  igual que Clientes). Build 0/0, **130/130 tests** (7 nuevos en
+  `ReportServiceTests`). UIA verificado con DB real: KPIs RD$ 700 / 7 tickets /
+  RD$ 100 promedio / 7 ítems (la venta #1 es del 14-ago, correctamente fuera de
+  hoy); periodo 7 días suma la de ayer → 8 tickets / RD$ 800 en ambas tablas;
+  chips de periodo cambian los subtítulos de las tablas.
 
 ### P4.3 — Backup/restore SQLite
 

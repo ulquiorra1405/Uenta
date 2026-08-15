@@ -511,6 +511,8 @@
         <Geometry x:Key="CashIcon">M2 7h20v10H2z M2 10h20 M17 12h.01 M6 12h.01</Geometry>
         <!-- Icono de cliente (contacto/persona con tarjeta, estilo feather) -->
         <Geometry x:Key="CustomerIcon">M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M16 6h6 M16 10h4</Geometry>
+        <!-- Icono de reportes (gráfico de barras, estilo feather) -->
+        <Geometry x:Key="ChartIcon">M18 20V10 M12 20V4 M6 20v-6 M3 20h18</Geometry>
         <!-- Logo Uenta (ico.svg → Geometry inline; WPF no renderiza SVG nativo).
              Vive en App.xaml: LoginView lo necesita dentro de un DataTemplate, que solo
              resuelve App.Resources (no Window.Resources). -->
@@ -612,6 +614,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:CustomersViewModel}">
             <views:CustomersView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
+            <views:ReportsView />
         </DataTemplate>
     </Application.Resources>
 </Application>

@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<ICashSessionRepository, CashSessionRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<IClock, SystemClock>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ICurrentSession, CurrentSession>();

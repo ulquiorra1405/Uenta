@@ -36,6 +36,7 @@ public partial class MainWindowViewModel : ViewModelBase
         GoSettingsCommand = new AsyncRelayCommand(GoSettingsAsync);
         GoUsersCommand = new AsyncRelayCommand(GoUsersAsync);
         GoCustomersCommand = new AsyncRelayCommand(GoCustomersAsync);
+        GoReportsCommand = new AsyncRelayCommand(GoReportsAsync);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
@@ -49,6 +50,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsSettingsActive));
             OnPropertyChanged(nameof(IsUsersActive));
             OnPropertyChanged(nameof(IsCustomersActive));
+            OnPropertyChanged(nameof(IsReportsActive));
             ObserveOverlayFlags();
         };
 
@@ -142,6 +144,12 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Clientes: {ex}"); }
     }
 
+    private async Task GoReportsAsync()
+    {
+        try { await Navigation.NavigateToAsync<ReportsViewModel>(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Reportes: {ex}"); }
+    }
+
     /// <summary>Vista actual; el ContentControl del MainWindow bindea aquí.</summary>
     public ViewModelBase? Current => Navigation.Current;
 
@@ -150,6 +158,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AsyncRelayCommand GoSettingsCommand { get; }
     public AsyncRelayCommand GoUsersCommand { get; }
     public AsyncRelayCommand GoCustomersCommand { get; }
+    public AsyncRelayCommand GoReportsCommand { get; }
     public RelayCommand ToggleSidebarCommand { get; }
     public AsyncRelayCommand LogoutCommand { get; }
 
@@ -167,6 +176,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsSettingsActive => Current is SettingsViewModel;
     public bool IsUsersActive => Current is UsersViewModel;
     public bool IsCustomersActive => Current is CustomersViewModel;
+    public bool IsReportsActive => Current is ReportsViewModel;
 
     partial void OnIsSidebarCollapsedChanged(bool value)
     {
@@ -176,6 +186,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSettingsActive));
         OnPropertyChanged(nameof(IsUsersActive));
         OnPropertyChanged(nameof(IsCustomersActive));
+        OnPropertyChanged(nameof(IsReportsActive));
     }
 
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
@@ -207,6 +218,10 @@ public partial class MainWindowViewModel : ViewModelBase
     /// cualquier rol con permiso de venta (todos los roles).</summary>
     public bool CanManageCustomers => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.Sell);
 
+    /// <summary>¿El usuario puede ver los reportes? Dashboard operativo:
+    /// cualquier rol con permiso de venta (todos los roles), igual que Clientes.</summary>
+    public bool CanManageReports => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.Sell);
+
     /// <summary>¿El usuario puede cerrar caja? Controla el botón de cierre en el header.</summary>
     public bool CanCloseCash => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.CloseCash);
 
@@ -220,6 +235,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanManageCatalog));
         OnPropertyChanged(nameof(CanManageUsers));
         OnPropertyChanged(nameof(CanManageCustomers));
+        OnPropertyChanged(nameof(CanManageReports));
         OnPropertyChanged(nameof(CanManageSettings));
         OnPropertyChanged(nameof(CanCloseCash));
     }

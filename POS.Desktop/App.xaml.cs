@@ -43,6 +43,7 @@ public partial class App : System.Windows.Application
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<UsersViewModel>();
         services.AddTransient<CustomersViewModel>();
+        services.AddTransient<ReportsViewModel>();
         services.AddTransient<LoginViewModel>();
         services.AddTransient<PlaceholderViewModel>();
 
