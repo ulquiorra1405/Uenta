@@ -229,6 +229,14 @@
   entra "por ajustes manuales" queda formalizado.
 - **Verificación:** ajuste de stock → cantidad cambia → audit log con motivo/usuario;
   tests.
+- **Estado:** ✅ HECHO (15-ago-2026). Entidad `StockMovement` (tipo, cantidad, motivo,
+  usuario, `StockAfter`, fecha) + `InventoryService.AdjustStockAsync` (Entry suma, Exit
+  resta — permite negativo P3 —, Adjustment fija el valor) y `GetByProductAsync`
+  (historial). Persistencia atómica: movimiento + stock en el mismo contexto. En la
+  ficha del producto (edición) el stock ya NO se edita directo: se muestra en un badge
+  y se ajusta con el panel "Ajustar stock" (tipo/cantidad/motivo, motivo obligatorio).
+  `UpdateAsync` dejó de tocar `Stock`. Build 0/0, 73/73 tests, smoke UIA (catálogo →
+  ficha → panel de ajuste → validación de motivo) OK.
 
 ---
 
