@@ -117,7 +117,8 @@
 
 ## Fase 1A — Recibo real (cierra venta.md §6.1, pasos 3 / 5 / 6)
 
-> Prerrequisito: P0.1 (el recibo es exactamente donde se notaría un descuadre).
+> ✅ **FASE CERRADA (15-ago-2026): P1.1 + P1.2 + P1.3 completos.** Prerrequisito
+> P0.1 (el recibo es exactamente donde se notaría un descuadre) ya estaba.
 
 ### P1.1 — Impresora térmica ESC/POS real (P/Invoke winspool.drv)
 
@@ -128,6 +129,14 @@
   segundo plano (dev). Paso 3 de venta.md §6.1.
 - **Verificación:** imprimir recibo de prueba en impresora física (dev); error claro si
   el nombre no existe; build 0/0 + tests de encoder intactos.
+- **Estado:** ✅ HECHO (15-ago-2026). `RawPrinterHelper` (P/Invoke winspool.drv:
+  OpenPrinter/StartDoc/StartPage/Write/End… + enumeración por `PrinterSettings`) en
+  `POS.Infrastructure/Printing`. `ThermalReceiptPrinter` = `IReceiptPrinter` real
+  (nombre desde Ajustes, N copias, `EscPosEncoder` + `ReceiptContentBuilder`).
+  Verificado en **impresora virtual "Microsoft Print to PDF"** (flujo winspool completo,
+  530 bytes) + error claro con nombre inexistente. Los tests usan `ConsoleReceiptPrinter`
+  explícito (nunca tocan impresoras del sistema). **Pendiente hardware: probar en
+  impresora física ESC/POS real cuando llegue** (anotado; el flujo ya está validado).
 
 ### P1.2 — Conectar impresión al cobro + modal de resultado completo
 
@@ -140,6 +149,12 @@
   ya quedó persistida; se muestra un aviso no bloqueante (offline-first).
 - **Verificación:** UIA flujo completo (efectivo → modal → reimprimir → PDF → nueva
   venta); simular fallo de impresora → aviso, venta intacta.
+- **Estado:** ✅ HECHO (15-ago-2026). Modal de resultado con `[Imprimir]` (icono
+  impresora) `[PDF]` (SaveFileDialog → `ReceiptPdfGenerator.Generate`) `[Nueva venta]`
+  (Enter sigue mapeado). `ConfirmPaymentAsync` dispara auto-impresión tras persistir.
+  Regla dura probada por UIA: sin impresora configurada → aviso rojo "No hay impresora
+  configurada. Ábrala en Ajustes." + venta intacta + modal abierto. Verificado con
+  ui-reviewer (botones alineados, texto no cortado).
 
 ### P1.3 — Ajustes: impresora + datos del negocio
 
@@ -149,6 +164,15 @@
 - **Merge/Reemplaza:** paso 6 de venta.md §6.1 y el hueco de "Ajustes" del scope de Fase 1.
 - **Verificación:** selección persiste entre reinicios; el pie de recibo aparece en
   térmico/PDF; build 0/0.
+- **Estado:** ✅ HECHO (15-ago-2026). Entidad `Setting` (clave/valor) + `SettingRepository`
+  (upsert por clave) + migración `AddSettings`. `SettingsService` con lectura tipada
+  (Get/GetBool/GetInt + `GetReceiptSettingsAsync` con clamp de copias 1-9). Pantalla
+  `SettingsView` accesible desde la barra de título (⚙) y el sidebar; `SettingsViewModel`
+  enumera impresoras del sistema (`RawPrinterHelper.GetInstalledPrinters`). `ReceiptContentBuilder`
+  acepta `ReceiptSettingsDto` opcional → encabezado negocio (nombre/RNC/dirección) + pie
+  personalizado, compartido por térmica y PDF (comportamiento idéntico sin settings).
+  Verificado: persistencia entre reinicios por UIA (nombre + pie sobreviven),
+  recibo renderizado con datos reales de la DB, build 0/0, 79/79 tests.
 
 ---
 

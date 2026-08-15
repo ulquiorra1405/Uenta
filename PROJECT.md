@@ -1,7 +1,7 @@
 # PROJECT — POS (Punto de Venta)
 
-> Estado: **Fase 0.5 (cimientos técnicos) cerrada — Fase 1C en curso** (catálogo: P3.1 ✅ + P3.1b ✅ + P3.2 ✅ movimientos de inventario; ver `PLAN.md` para la ejecución detallada)
-> Última actualización: 15-ago-2026 · build 0/0, 73/73 tests verdes
+> Estado: **Fase 0.5 (cimientos técnicos) cerrada — Fase 1A cerrada (15-ago: recibo real P1.1–P1.3)** — Fase 1C cerrada (catálogo + inventario P3.1/P3.1b/P3.2); ver `PLAN.md` para la ejecución detallada
+> Última actualización: 15-ago-2026 · build 0/0, 79/79 tests verdes
 
 ---
 
@@ -255,7 +255,7 @@ VS Code + C# Dev Kit sigue siendo buena opción para tareas ligeras (editar, rev
 |------|-----------|--------|
 | **Fase 0** | Esqueleto + ejemplo punta a punta (vender producto con stock → SQLite → Result<T>) + rediseño ticket-centered + motor de recibo | ✅ cerrada |
 | **Fase 0.5** | Cimientos técnicos: pricing único, split de SaleView, async void, secuencia de numeración, estilos | ✅ cerrada |
-| **Fase 1A** | Recibo real: impresora ESC/POS + conectar al cobro + Ajustes | ⏳ (PLAN.md) |
+| **Fase 1A** | Recibo real: impresora ESC/POS + conectar al cobro + Ajustes | ✅ **cerrada 15-ago** (P1.1 térmica real, P1.2 modal Imprimir/PDF, P1.3 Ajustes) |
 | **Fase 1B** | Usuarios/roles + login, caja (apertura/cierre), auditoría | ⏳ (PLAN.md) |
 | **Fase 1C** | Catálogo completo (variantes P9) + movimientos de inventario | 🔄 en curso — P3.1 ✅ + P3.1b ✅ + P3.2 ✅ (15-ago) |
 | **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | ⏳ (PLAN.md) |

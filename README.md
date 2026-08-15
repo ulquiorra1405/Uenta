@@ -2,7 +2,7 @@
 
 Sistema de punto de venta para Windows, de mostrador, **offline-first** (funciona sin internet). Escrito en C# / .NET 9 con WPF y SQLite.
 
-> **Estado:** Fase 0.5 (cimientos técnicos) cerrada — **Fase 1C (catálogo) en curso**. Build 0 errores/0 warnings · 65/65 tests verdes.
+> **Estado:** Fase 0.5 (cimientos técnicos) cerrada — **Fases 1A (recibo real) y 1C (catálogo) cerradas**. Build 0 errores/0 warnings · 79/79 tests verdes.
 
 ## Características
 
@@ -87,7 +87,7 @@ POS.sln
 ├── POS.Domain/          # Entidades y reglas de negocio puras
 ├── POS.Infrastructure/  # EF Core + SQLite, repositorios, migraciones, impresora
 ├── POS.Desktop/         # App WPF: ViewModels, Views, Behaviors, Converters
-└── POS.Tests/           # Suite xUnit (65 tests)
+└── POS.Tests/           # Suite xUnit (79 tests)
 ```
 
 ## Roadmap
@@ -96,9 +96,9 @@ POS.sln
 |------|-----------|--------|
 | Fase 0 | Esqueleto 4 capas + ejemplo punta a punta + motor de recibo | Cerrada |
 | Fase 0.5 | Cimientos técnicos: pricing único, secuencia atómica, estilos | Cerrada |
-| Fase 1A | Recibo real: impresora ESC/POS + ajustes | Pendiente |
+| Fase 1A | Recibo real: impresora ESC/POS + ajustes | ✅ Cerrada (15-ago) |
 | Fase 1B | Usuarios/roles + login, caja, auditoría | Pendiente |
-| Fase 1C | Catálogo completo + inventario | En curso |
+| Fase 1C | Catálogo completo + inventario | ✅ Cerrada (15-ago) |
 | Fase 1D | Clientes, reportes, backup/restore | Pendiente |
 | Fase 2 | Devoluciones, compras/proveedores, e-CF (DGII) | Pendiente |
 | Fase 3 | Fidelización, multi-sucursal, API móvil | Pendiente |
