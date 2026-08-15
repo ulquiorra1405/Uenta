@@ -282,8 +282,9 @@
   completo OK: abrir (500) → venta (100) → badge Efectivo 100.00 → retiros (2×20) →
   cierre conteo 555 → "Caja #1 cerrada · Diferencia RD$ -5.00" → COBRAR/EFECTIVO
   deshabilitados con caja cerrada → logout/login cajero con sidebar restringido.**
-  Pendiente menor (P2.2d): recibo debe mostrar "Caja #" (se asocia `CashSessionId`
-  en la venta; falta imprimirlo en el ticket).
+  P2.2d completo: `SaleDto.CashSessionId` propagado y el recibo muestra "Caja #: N"
+  (térmica, PDF y consola comparten el motor `ReceiptContentBuilder`). Build 0/0,
+  108/108 tests (2 nuevos: con/sin caja).
 
 ---
 
