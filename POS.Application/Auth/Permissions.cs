@@ -20,16 +20,18 @@ public static class Permissions
     public const string ManageUsers = "ManageUsers";       // Gestionar usuarios
     public const string ViewAudit = "ViewAudit";           // Ver auditoría (vista Fase 1D)
     public const string ManageSettings = "ManageSettings"; // Configurar impresora/datos del negocio
+    public const string ManagePurchases = "ManagePurchases"; // Registrar compras a proveedores (stock + costo)
+    public const string ManageSuppliers = "ManageSuppliers"; // Gestionar proveedores (datos maestros)
 
     private static readonly Dictionary<UserRole, HashSet<string>> _matrix = new()
     {
         [UserRole.Admin] = new()
         {
-            Sell, Refund, RefundNoReceipt, ViewCosts, CloseCash, ManageCatalog, AdjustStock, ManageUsers, ViewAudit, ManageSettings
+            Sell, Refund, RefundNoReceipt, ViewCosts, CloseCash, ManageCatalog, AdjustStock, ManageUsers, ViewAudit, ManageSettings, ManagePurchases, ManageSuppliers
         },
         [UserRole.Supervisor] = new()
         {
-            Sell, Refund, RefundNoReceipt, CloseCash, ManageCatalog, AdjustStock, ManageSettings
+            Sell, Refund, RefundNoReceipt, CloseCash, ManageCatalog, AdjustStock, ManageSettings, ManagePurchases, ManageSuppliers
         },
         [UserRole.Cajero] = new()
         {

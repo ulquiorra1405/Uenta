@@ -100,7 +100,7 @@ POS.sln
 | Fase 1B | Usuarios/roles + login, caja, auditoría | ✅ Cerrada (15-ago) |
 | Fase 1C | Catálogo completo + inventario | ✅ Cerrada (15-ago) |
 | Fase 1D | Clientes, reportes, backup/restore | ✅ Cerrada (15-ago) |
-| Fase 2 | Devoluciones/notas de crédito + compras/proveedores | 🔄 En curso — P5.1 devoluciones ✅ (16-ago) · P5.2 compras pendiente |
+| Fase 2 | Devoluciones/notas de crédito + compras/proveedores | 🔄 En curso — P5.1 devoluciones ✅ (16-ago) · P5.2 compras/proveedores ✅ (16-ago) |
 | Fase 3 | e-CF (DGII) — facturación electrónica | ⏳ Al final deliberado: lo más delicado, depende de DGII |
 | Fase 4 | Fidelización, multi-sucursal, API móvil | Pendiente |
 

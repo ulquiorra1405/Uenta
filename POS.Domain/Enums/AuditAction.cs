@@ -31,5 +31,11 @@ public enum AuditAction
     CashClosed = 8,
 
     /// <summary>Devolución creada (Detail: número de nota + total + recibo original o "sin recibo").</summary>
-    RefundCreated = 9
+    RefundCreated = 9,
+
+    /// <summary>Compra registrada (Detail: número de compra + total + proveedor o "sin proveedor").</summary>
+    PurchaseCreated = 10,
+
+    /// <summary>Proveedor creado (Detail: nombre + RNC si aplica).</summary>
+    SupplierCreated = 11
 }

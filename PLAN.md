@@ -473,6 +473,17 @@
 
 ### P5.2 — Compras y proveedores
 
+> **ESTADO (16-ago): ✅ implementado y verificado.** Dominio (`Supplier`, `Purchase`,
+> `PurchaseItem`) + servicio con **costo promedio ponderado** + repositorio con
+> numeración atómica (`Sequences Id=3`) + migración `AddPurchases` aplicada a la DB
+> real + 13 tests nuevos (153/153 verdes) + pantalla desktop completa (proveedor,
+> buscador de producto con costo unitario, líneas editables, historial, modal de
+> proveedor, modal de resultado) + sidebar "Compras" (Admin/Supervisor) + smoke UIA
+> end-to-end (proveedor → compra #1 de 5×Café → stock 4→9, costo 35→43.33 promedio
+> ponderado, movimiento Entry "Compra"). Pendiente de roadmap: editar proveedores
+> desde la pantalla (hoy el servicio lo soporta, la UI solo crea/listar) y el e-CF
+> posterior solo añadirá facturas de compra electrónicas.
+
 - **Objetivo:** registrar compras (producto, cantidad, costo unitario, proveedor,
   fecha) que reponen stock y registran el costo real (reemplaza la entrada directa de
   inventario del P3.2 para compras).
@@ -482,10 +493,22 @@
   actualizado; listar proveedores; tests.
 - **Decisiones (cerradas 15-ago, con Bryan):**
   - **(a)** Costo **promedio ponderado** (estándar en POS; evita picos de margen).
+    Tras la compra: `Cost = (StockActual × CostoActual + Cantidad × CostoUnitario) / (StockActual + Cantidad)`.
+    Si el stock resultante es ≤ 0 (venta sin stock previa), el costo pasa a ser el de
+    la compra (no hay stock previo que ponderar).
   - **(b)** **Solo contado** en v1 — sin cuentas por pagar (el crédito con proveedor
     se añade después; menos superficie).
   - **(c)** Entidad **`Supplier` nueva** (nombre, RNC, teléfono) con tabla propia;
     los proveedores son datos maestros reutilizables.
+- **Notas de implementación (16-ago):**
+  - Permisos nuevos `ManagePurchases` / `ManageSuppliers` (Admin + Supervisor); el
+    cajero no registra compras.
+  - La compra es un documento interno (no fiscal): secuencia propia `Id=3`, se
+    persiste todo (compra + items + stock + movimiento) en la misma transacción
+    atómica del repo (patrón P5.1).
+  - Auditoría: acciones nuevas `PurchaseCreated` y `SupplierCreated`.
+  - Proveedor opcional en v1: la compra puede registrarse sin proveedor; si se
+    indica, debe existir (RNC único cuando se registra).
 
 ---
 

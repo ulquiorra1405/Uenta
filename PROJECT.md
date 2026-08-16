@@ -259,7 +259,7 @@ VS Code + C# Dev Kit sigue siendo buena opción para tareas ligeras (editar, rev
 | **Fase 1B** | Usuarios/roles + login, caja (apertura/cierre), auditoría | ✅ **cerrada 15-ago** (P2.1 login/roles/permisos/auditoría + P2.2 caja completa; 106/106 tests) |
 | **Fase 1C** | Catálogo completo (variantes P9) + movimientos de inventario | ✅ **cerrada 15-ago** (P3.1 + P3.1b + P3.2) |
 | **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | ✅ **cerrada 15-ago** (P4.1 clientes + P4.2 reportes + P4.3 backup; 130/130 tests) |
-| **Fase 2** | Devoluciones/notas de crédito + compras/proveedores | 🔄 en curso — **P5.1 devoluciones ✅ implementado y verificado (16-ago: 140/140 tests + smoke UIA end-to-end)**; P5.2 compras pendiente |
+| **Fase 2** | Devoluciones/notas de crédito + compras/proveedores | 🔄 en curso — **P5.1 devoluciones ✅ (16-ago: 140/140 tests + smoke UIA end-to-end)**; **P5.2 compras/proveedores ✅ (16-ago: 153/153 tests + smoke UIA: compra #1 → stock 4→9, costo 35→43.33 promedio ponderado, movimiento Entry "Compra")** |
 | **Fase 3** | e-CF (DGII) — facturación electrónica con NCF | ⏳ *deliberadamente al final (lo más delicado): depende de requisitos DGII; requiere core de venta estable y decisiones de negocio sobre ventas pre-e-CF* |
 | **Fase 4** | Fidelización, reportes avanzados, multi-sucursal, POS.Api + app móvil | ⏳ |
 

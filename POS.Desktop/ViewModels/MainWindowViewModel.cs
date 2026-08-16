@@ -38,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
         GoCustomersCommand = new AsyncRelayCommand(GoCustomersAsync);
         GoReportsCommand = new AsyncRelayCommand(GoReportsAsync);
         GoRefundsCommand = new AsyncRelayCommand(GoRefundsAsync);
+        GoPurchasesCommand = new AsyncRelayCommand(GoPurchasesAsync);
         ToggleSidebarCommand = new RelayCommand(ToggleSidebar);
         LogoutCommand = new AsyncRelayCommand(LogoutAsync);
 
@@ -53,6 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsCustomersActive));
             OnPropertyChanged(nameof(IsReportsActive));
             OnPropertyChanged(nameof(IsRefundsActive));
+            OnPropertyChanged(nameof(IsPurchasesActive));
             ObserveOverlayFlags();
         };
 
@@ -91,6 +93,7 @@ public partial class MainWindowViewModel : ViewModelBase
             case nameof(ProductListViewModel.IsProductEditorOpen):
             case nameof(CustomersViewModel.IsCreateOpen):
             case nameof(CustomersViewModel.IsHistoryOpen):
+            case nameof(PurchasesViewModel.IsSupplierModalOpen):
                 UpdateIsAnyOverlayOpen();
                 break;
         }
@@ -109,6 +112,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SaleViewModel s => s.IsCatalogOpen || s.IsPaymentOpen || s.IsResultOpen || IsAnyCashModalOpen,
             ProductListViewModel p => p.IsCategoryManagerOpen || p.IsProductEditorOpen,
             CustomersViewModel c => c.IsCreateOpen || c.IsHistoryOpen,
+            PurchasesViewModel p => p.IsSupplierModalOpen || p.IsResultOpen,
             _ => IsAnyCashModalOpen,
         };
     }
@@ -158,6 +162,12 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Devoluciones: {ex}"); }
     }
 
+    private async Task GoPurchasesAsync()
+    {
+        try { await Navigation.NavigateToAsync<PurchasesViewModel>(); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[MainWindow] Compras: {ex}"); }
+    }
+
     /// <summary>Vista actual; el ContentControl del MainWindow bindea aquí.</summary>
     public ViewModelBase? Current => Navigation.Current;
 
@@ -168,6 +178,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AsyncRelayCommand GoCustomersCommand { get; }
     public AsyncRelayCommand GoReportsCommand { get; }
     public AsyncRelayCommand GoRefundsCommand { get; }
+    public AsyncRelayCommand GoPurchasesCommand { get; }
     public RelayCommand ToggleSidebarCommand { get; }
     public AsyncRelayCommand LogoutCommand { get; }
 
@@ -187,6 +198,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsCustomersActive => Current is CustomersViewModel;
     public bool IsReportsActive => Current is ReportsViewModel;
     public bool IsRefundsActive => Current is RefundsViewModel;
+    public bool IsPurchasesActive => Current is PurchasesViewModel;
 
     partial void OnIsSidebarCollapsedChanged(bool value)
     {
@@ -198,6 +210,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsCustomersActive));
         OnPropertyChanged(nameof(IsReportsActive));
         OnPropertyChanged(nameof(IsRefundsActive));
+        OnPropertyChanged(nameof(IsPurchasesActive));
     }
 
     private void ToggleSidebar() => IsSidebarCollapsed = !IsSidebarCollapsed;
@@ -238,6 +251,10 @@ public partial class MainWindowViewModel : ViewModelBase
     /// se controla dentro de la pantalla con RefundNoReceipt (Admin/Supervisor).</summary>
     public bool CanManageRefunds => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.Sell);
 
+    /// <summary>¿El usuario puede registrar compras? Gestión de inventario y costos:
+    /// Admin/Supervisor (permiso ManagePurchases).</summary>
+    public bool CanManagePurchases => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.ManagePurchases);
+
     /// <summary>¿El usuario puede cerrar caja? Controla el botón de cierre en el header.</summary>
     public bool CanCloseCash => _session.CurrentUser is { } u && Permissions.Has(u.Role, Permissions.CloseCash);
 
@@ -253,6 +270,7 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanManageCustomers));
         OnPropertyChanged(nameof(CanManageReports));
         OnPropertyChanged(nameof(CanManageRefunds));
+        OnPropertyChanged(nameof(CanManagePurchases));
         OnPropertyChanged(nameof(CanManageSettings));
         OnPropertyChanged(nameof(CanCloseCash));
     }

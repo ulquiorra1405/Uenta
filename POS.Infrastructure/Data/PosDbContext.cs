@@ -25,6 +25,9 @@ public class PosDbContext : DbContext
     public DbSet<Refund> Refunds => Set<Refund>();
     public DbSet<RefundItem> RefundItems => Set<RefundItem>();
     public DbSet<RefundPayment> RefundPayments => Set<RefundPayment>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Purchase> Purchases => Set<Purchase>();
+    public DbSet<PurchaseItem> PurchaseItems => Set<PurchaseItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -187,6 +190,34 @@ public class PosDbContext : DbContext
             e.Property(p => p.Method).HasConversion<int>();
             e.Property(p => p.Amount).HasConversion(money).HasColumnType("decimal(18,2)");
             e.HasOne(p => p.Refund).WithMany(r => r.Payments).HasForeignKey(p => p.RefundId);
+        });
+
+        modelBuilder.Entity<Supplier>(e =>
+        {
+            e.ToTable("Suppliers");
+            e.Property(s => s.Name).HasMaxLength(200).IsRequired();
+            e.Property(s => s.Rnc).HasMaxLength(20);
+            e.Property(s => s.Phone).HasMaxLength(30);
+            e.HasIndex(s => s.Rnc);
+        });
+
+        modelBuilder.Entity<Purchase>(e =>
+        {
+            e.ToTable("Purchases");
+            e.Property(p => p.Total).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.HasIndex(p => p.Number).IsUnique();
+            e.HasOne(p => p.User).WithMany().HasForeignKey(p => p.UserId).IsRequired();
+            e.HasOne(p => p.Supplier).WithMany(s => s.Purchases).HasForeignKey(p => p.SupplierId).IsRequired(false);
+        });
+
+        modelBuilder.Entity<PurchaseItem>(e =>
+        {
+            e.ToTable("PurchaseItems");
+            e.Property(i => i.ProductName).HasMaxLength(200).IsRequired();
+            e.Property(i => i.Quantity).HasColumnType("decimal(18,2)");
+            e.Property(i => i.UnitCost).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.Property(i => i.Total).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.HasOne(i => i.Purchase).WithMany(p => p.Items).HasForeignKey(i => i.PurchaseId);
         });
     }
 }
