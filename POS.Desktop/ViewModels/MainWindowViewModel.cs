@@ -82,21 +82,25 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateIsAnyOverlayOpen();
     }
 
+    /// <summary>Flags de overlay de cualquier VM activo que requieren refundir el
+    /// sidebar con el scrim. HashSet: IsCreateOpen existe en varios VMs (mismo nombre).</summary>
+    private static readonly HashSet<string> OverlayFlagNames = new()
+    {
+        nameof(SaleViewModel.IsCatalogOpen),
+        nameof(SaleViewModel.IsPaymentOpen),
+        nameof(SaleViewModel.IsResultOpen),
+        nameof(ProductListViewModel.IsCategoryManagerOpen),
+        nameof(ProductListViewModel.IsProductEditorOpen),
+        nameof(CustomersViewModel.IsCreateOpen),
+        nameof(CustomersViewModel.IsHistoryOpen),
+        nameof(UsersViewModel.IsCreateOpen),
+        nameof(PurchasesViewModel.IsSupplierModalOpen),
+    };
+
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        switch (e.PropertyName)
-        {
-            case nameof(SaleViewModel.IsCatalogOpen):
-            case nameof(SaleViewModel.IsPaymentOpen):
-            case nameof(SaleViewModel.IsResultOpen):
-            case nameof(ProductListViewModel.IsCategoryManagerOpen):
-            case nameof(ProductListViewModel.IsProductEditorOpen):
-            case nameof(CustomersViewModel.IsCreateOpen):
-            case nameof(CustomersViewModel.IsHistoryOpen):
-            case nameof(PurchasesViewModel.IsSupplierModalOpen):
-                UpdateIsAnyOverlayOpen();
-                break;
-        }
+        if (OverlayFlagNames.Contains(e.PropertyName))
+            UpdateIsAnyOverlayOpen();
     }
 
     /// <summary>True si hay un popup abierto. Con esto el sidebar deja de ser blanco
@@ -112,6 +116,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SaleViewModel s => s.IsCatalogOpen || s.IsPaymentOpen || s.IsResultOpen || IsAnyCashModalOpen,
             ProductListViewModel p => p.IsCategoryManagerOpen || p.IsProductEditorOpen,
             CustomersViewModel c => c.IsCreateOpen || c.IsHistoryOpen,
+            UsersViewModel u => u.IsCreateOpen,
             PurchasesViewModel p => p.IsSupplierModalOpen || p.IsResultOpen,
             _ => IsAnyCashModalOpen,
         };

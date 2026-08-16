@@ -571,6 +571,8 @@
         <views:ResultModalView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
         <views:CategoryManagerPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
         <views:ProductEditorPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <views:UsersPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
+        <views:CustomersPopupView Grid.ColumnSpan="2" DataContext="{Binding Current}" />
         <!-- Modales de caja: DataContext = MainWindowViewModel (el header es global, no depende de la vista). -->
         <views:CashModalsView Grid.ColumnSpan="2" />
         </Grid>

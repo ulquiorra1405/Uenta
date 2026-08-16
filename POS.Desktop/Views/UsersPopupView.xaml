@@ -1,0 +1,52 @@
+<UserControl x:Class="POS.Desktop.Views.UsersPopupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:beh="clr-namespace:POS.Desktop.Behaviors"
+             mc:Ignorable="d"
+             d:DesignHeight="520" d:DesignWidth="420">
+
+    <!-- Overlay global: crear usuario. Vive en el MainWindow para que su scrim
+         cubra sidebar + vista (patrón unificado de overlays). -->
+    <Grid Style="{StaticResource OverlayScrim}"
+          beh:OverlayAnimator.IsOpen="{Binding IsCreateOpen}">
+        <Border Style="{StaticResource DialogSurface}" Width="400"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+            <StackPanel>
+                <TextBlock Text="Nuevo usuario" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14" />
+                <TextBlock Text="Usuario" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox Text="{Binding NewUsername, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="13" Padding="8,7" Margin="0,3,0,10"
+                         AutomationProperties.Name="NuevoUsuarioNombre" />
+                <TextBlock Text="Nombre para mostrar" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBox Text="{Binding NewDisplayName, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="13" Padding="8,7" Margin="0,3,0,10"
+                         AutomationProperties.Name="NuevoUsuarioMostrar" />
+                <TextBlock Text="Contraseña (mín. 6 caracteres)" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                <PasswordBox x:Name="NewPasswordBox" FontSize="13" Padding="8,7" Margin="0,3,0,10"
+                             AutomationProperties.Name="NuevoUsuarioContrasena"
+                             KeyDown="NewPassword_KeyDown" />
+                <TextBlock Text="Rol" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                <ComboBox ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding SelectedNewRole}"
+                          DisplayMemberPath="Label" FontSize="13" Padding="8,6" Margin="0,3,0,12"
+                          AutomationProperties.Name="RolNuevoUsuario" />
+
+                <TextBlock Text="{Binding CreateError}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap"
+                           Visibility="{Binding CreateError, Converter={StaticResource NullToVis}}" />
+                <TextBlock Text="{Binding CreateMessage}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource PrimaryDarkBrush}" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Visibility="{Binding CreateMessage, Converter={StaticResource NullToVis}}" />
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                    <Button Content="Cancelar" Style="{StaticResource SecondaryButton}" Padding="18,8" FontSize="13"
+                            Command="{Binding CloseCreateCommand}" />
+                    <Button Content="Crear usuario" Style="{StaticResource AccentButton}" Padding="18,8" FontSize="13"
+                            Margin="8,0,0,0" AutomationProperties.Name="CrearUsuario"
+                            Command="{Binding CreateCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
