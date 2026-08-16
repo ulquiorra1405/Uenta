@@ -46,7 +46,7 @@ public partial class CustomerSaleListItem : ObservableObject
     public string UserName { get; init; } = string.Empty;
     public string DateText => CreatedAt.ToString("dd/MM/yyyy HH:mm");
     public string TotalText => $"RD$ {Total:N2}";
-    public string MetaText => $"{DateText} · {ItemCount} líneas · {UserName}";
+    public string MetaText => $"{DateText} · {(ItemCount == 1 ? "1 línea" : $"{ItemCount} líneas")} · {UserName}";
 }
 
 /// <summary>
