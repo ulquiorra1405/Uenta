@@ -16,10 +16,13 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding LastCloseResult}" FontSize="12.5" FontWeight="SemiBold"
                            Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                <Button Style="{StaticResource SecondaryButton}" Content="✕" Margin="10,0,0,0"
-                        Padding="6,2" FontSize="12"
+                <Button Style="{StaticResource SecondaryButton}" Margin="10,0,0,0"
+                        Padding="6,2"
                         AutomationProperties.Name="CerrarResultadoCaja"
-                        Command="{Binding ClearLastCloseResultCommand}" />
+                        Command="{Binding ClearLastCloseResultCommand}">
+                    <Path Data="{StaticResource CloseIcon}" Stroke="{StaticResource DangerBrush}"
+                          StrokeThickness="2" Width="11" Height="11" Stretch="Uniform" />
+                </Button>
             </StackPanel>
         </Border>
 
@@ -34,6 +37,7 @@
 
                     <TextBlock Text="Efectivo inicial (RD$)" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
                     <TextBox Text="{Binding OpenCashText, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="MontoAperturaCaja"
                              FontSize="22" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
                              Padding="12,9" Margin="0,4,0,0" ToolTip="Fondo inicial de la caja (0 si no hay)" />
 
@@ -70,11 +74,13 @@
 
                     <TextBlock Text="Monto (RD$)" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
                     <TextBox Text="{Binding WithdrawAmountText, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="MontoRetiroCaja"
                              FontSize="20" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
                              Padding="12,9" Margin="0,4,0,10" />
 
                     <TextBlock Text="Motivo" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
                     <TextBox Text="{Binding WithdrawReason, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="MotivoRetiroCaja"
                              FontSize="14" Padding="12,8" Margin="0,4,0,0"
                              ToolTip="Ej.: pago a proveedor, cambio para la calle" />
 
@@ -129,6 +135,7 @@
 
                     <TextBlock Text="Conteo físico (RD$)" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
                     <TextBox Text="{Binding CloseCountText, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="ConteoFisicoCaja"
                              FontSize="22" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
                              Padding="12,9" Margin="0,4,0,0"
                              ToolTip="Total de efectivo contado en la caja" />
