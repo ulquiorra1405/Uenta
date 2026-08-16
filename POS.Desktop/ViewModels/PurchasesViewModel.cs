@@ -51,6 +51,7 @@ public partial class PurchaseHistoryItem : ObservableObject
     public decimal Total { get; init; }
     public string TotalText => $"RD$ {Total:N2}";
     public string SupplierText => SupplierName ?? "Sin proveedor";
+    public string LinesText => LineCount == 1 ? "1 línea" : $"{LineCount} líneas";
 }
 
 /// <summary>
