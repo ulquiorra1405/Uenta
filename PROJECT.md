@@ -257,10 +257,11 @@ VS Code + C# Dev Kit sigue siendo buena opción para tareas ligeras (editar, rev
 | **Fase 0.5** | Cimientos técnicos: pricing único, split de SaleView, async void, secuencia de numeración, estilos | ✅ cerrada |
 | **Fase 1A** | Recibo real: impresora ESC/POS + conectar al cobro + Ajustes | ✅ **cerrada 15-ago** (P1.1 térmica real, P1.2 modal Imprimir/PDF, P1.3 Ajustes) |
 | **Fase 1B** | Usuarios/roles + login, caja (apertura/cierre), auditoría | ✅ **cerrada 15-ago** (P2.1 login/roles/permisos/auditoría + P2.2 caja completa; 106/106 tests) |
-| **Fase 1C** | Catálogo completo (variantes P9) + movimientos de inventario | 🔄 en curso — P3.1 ✅ + P3.1b ✅ + P3.2 ✅ (15-ago) |
-| **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | 🔄 en curso — P4.3 ✅ + P4.1 ✅ + P4.2 ✅ (15-ago) |
-| **Fase 2** | Devoluciones/notas de crédito, compras/proveedores, e-CF (DGII) | ⏳ |
-| **Fase 3** | Fidelización, reportes avanzados, multi-sucursal, POS.Api + app móvil | ⏳ |
+| **Fase 1C** | Catálogo completo (variantes P9) + movimientos de inventario | ✅ **cerrada 15-ago** (P3.1 + P3.1b + P3.2) |
+| **Fase 1D** | Clientes + historial, reportes/dashboard, backup/restore | ✅ **cerrada 15-ago** (P4.1 clientes + P4.2 reportes + P4.3 backup; 130/130 tests) |
+| **Fase 2** | Devoluciones/notas de crédito + compras/proveedores | 🔄 en curso — **P5.1 devoluciones ✅ implementado y verificado (16-ago: 140/140 tests + smoke UIA end-to-end)**; P5.2 compras pendiente |
+| **Fase 3** | e-CF (DGII) — facturación electrónica con NCF | ⏳ *deliberadamente al final (lo más delicado): depende de requisitos DGII; requiere core de venta estable y decisiones de negocio sobre ventas pre-e-CF* |
+| **Fase 4** | Fidelización, reportes avanzados, multi-sucursal, POS.Api + app móvil | ⏳ |
 
 ---
 

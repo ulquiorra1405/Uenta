@@ -40,4 +40,26 @@ public class SaleRepository : ISaleRepository
 
         return sale.Id;
     }
+
+    /// <summary>Venta con items y pagos cargados (para devoluciones, P5.1).</summary>
+    public async Task<Sale?> GetByIdAsync(long id, CancellationToken ct = default)
+    {
+        return await _db.Sales
+            .Include(s => s.Items)
+            .Include(s => s.Payments)
+            .Include(s => s.User)
+            .Include(s => s.Customer)
+            .FirstOrDefaultAsync(s => s.Id == id, ct);
+    }
+
+    /// <summary>Busca la venta por su número de recibo (devolución con recibo, P5.1).</summary>
+    public async Task<Sale?> GetByNumberAsync(long number, CancellationToken ct = default)
+    {
+        return await _db.Sales
+            .Include(s => s.Items)
+            .Include(s => s.Payments)
+            .Include(s => s.User)
+            .Include(s => s.Customer)
+            .FirstOrDefaultAsync(s => s.Number == number, ct);
+    }
 }

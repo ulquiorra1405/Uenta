@@ -62,4 +62,13 @@ public class CashSessionRepository : ICashSessionRepository
             .ToListAsync(ct);
         return payments.Sum(p => p.Amount.Amount);
     }
+
+    /// <summary>Suma de DEVOLUCIONES en efectivo dentro de la sesión (restan del esperado, P5.1).</summary>
+    public async Task<decimal> GetCashRefundsTotalAsync(long cashSessionId, CancellationToken ct = default)
+    {
+        var refunds = await _db.RefundPayments.AsNoTracking()
+            .Where(p => p.Refund.CashSessionId == cashSessionId && p.Method == PaymentMethod.Cash)
+            .ToListAsync(ct);
+        return refunds.Sum(p => p.Amount.Amount);
+    }
 }

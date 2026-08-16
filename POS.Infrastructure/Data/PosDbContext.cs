@@ -22,6 +22,9 @@ public class PosDbContext : DbContext
     public DbSet<CashSession> CashSessions => Set<CashSession>();
     public DbSet<CashWithdrawal> CashWithdrawals => Set<CashWithdrawal>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<RefundItem> RefundItems => Set<RefundItem>();
+    public DbSet<RefundPayment> RefundPayments => Set<RefundPayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -156,5 +159,34 @@ public class PosDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.UserId)
             .IsRequired();
+
+        modelBuilder.Entity<Refund>(e =>
+        {
+            e.ToTable("Refunds");
+            e.Property(r => r.Reason).HasMaxLength(200);
+            e.Property(r => r.Total).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.Property(r => r.Status).HasConversion<int>();
+            e.HasIndex(r => r.Number).IsUnique();
+            e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).IsRequired();
+            e.HasOne(r => r.OriginalSale).WithMany().HasForeignKey(r => r.OriginalSaleId).IsRequired(false);
+        });
+
+        modelBuilder.Entity<RefundItem>(e =>
+        {
+            e.ToTable("RefundItems");
+            e.Property(i => i.ProductName).HasMaxLength(200).IsRequired();
+            e.Property(i => i.Quantity).HasColumnType("decimal(18,2)");
+            e.Property(i => i.UnitPrice).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.Property(i => i.Total).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.HasOne(i => i.Refund).WithMany(r => r.Items).HasForeignKey(i => i.RefundId);
+        });
+
+        modelBuilder.Entity<RefundPayment>(e =>
+        {
+            e.ToTable("RefundPayments");
+            e.Property(p => p.Method).HasConversion<int>();
+            e.Property(p => p.Amount).HasConversion(money).HasColumnType("decimal(18,2)");
+            e.HasOne(p => p.Refund).WithMany(r => r.Payments).HasForeignKey(p => p.RefundId);
+        });
     }
 }

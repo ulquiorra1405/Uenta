@@ -11,6 +11,8 @@ public static class Permissions
 {
     // ─── Permisos ───
     public const string Sell = "Sell";                     // Vender / cobrar
+    public const string Refund = "Refund";                 // Devolución CON recibo (operación de mostrador)
+    public const string RefundNoReceipt = "RefundNoReceipt"; // Devolución SIN recibo (riesgo: requiere supervisor)
     public const string ViewCosts = "ViewCosts";           // Ver costos
     public const string CloseCash = "CloseCash";           // Cerrar caja
     public const string ManageCatalog = "ManageCatalog";   // Productos + categorías
@@ -23,15 +25,15 @@ public static class Permissions
     {
         [UserRole.Admin] = new()
         {
-            Sell, ViewCosts, CloseCash, ManageCatalog, AdjustStock, ManageUsers, ViewAudit, ManageSettings
+            Sell, Refund, RefundNoReceipt, ViewCosts, CloseCash, ManageCatalog, AdjustStock, ManageUsers, ViewAudit, ManageSettings
         },
         [UserRole.Supervisor] = new()
         {
-            Sell, CloseCash, ManageCatalog, AdjustStock, ManageSettings
+            Sell, Refund, RefundNoReceipt, CloseCash, ManageCatalog, AdjustStock, ManageSettings
         },
         [UserRole.Cajero] = new()
         {
-            Sell
+            Sell, Refund
         },
     };
 

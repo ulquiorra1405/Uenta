@@ -11,4 +11,10 @@ public interface ISaleRepository
     /// en esa misma transacción: consecutivos, sin carreras ni huecos.
     /// </summary>
     Task<long> AddAsync(Sale sale, CancellationToken ct = default);
+
+    /// <summary>Venta con items y pagos (para validar devoluciones, P5.1).</summary>
+    Task<Sale?> GetByIdAsync(long id, CancellationToken ct = default);
+
+    /// <summary>Busca la venta por su número de recibo (devolución con recibo, P5.1).</summary>
+    Task<Sale?> GetByNumberAsync(long number, CancellationToken ct = default);
 }

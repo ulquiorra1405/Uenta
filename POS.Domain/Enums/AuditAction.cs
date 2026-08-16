@@ -28,5 +28,8 @@ public enum AuditAction
     CashWithdrawn = 7,
 
     /// <summary>Cierre de caja (Detail: conteo, esperado, diferencia).</summary>
-    CashClosed = 8
+    CashClosed = 8,
+
+    /// <summary>Devolución creada (Detail: número de nota + total + recibo original o "sin recibo").</summary>
+    RefundCreated = 9
 }

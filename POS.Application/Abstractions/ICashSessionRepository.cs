@@ -16,4 +16,7 @@ public interface ICashSessionRepository
 
     /// <summary>Suma de ventas por método distinto de efectivo dentro de la sesión.</summary>
     Task<decimal> GetNonCashSalesTotalAsync(long cashSessionId, CancellationToken ct = default);
+
+    /// <summary>Suma de DEVOLUCIONES en efectivo dentro de la sesión (restan del esperado).</summary>
+    Task<decimal> GetCashRefundsTotalAsync(long cashSessionId, CancellationToken ct = default);
 }

@@ -20,6 +20,20 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
+        // Captura excepciones no manejadas del hilo UI (diagnóstico P5.1): la app
+        // se moría silenciosamente al navegar a Devoluciones.
+        DispatcherUnhandledException += (_, args) =>
+        {
+            try
+            {
+                var dbDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Uenta");
+                File.WriteAllText(Path.Combine(dbDir, "unhandled-error.log"),
+                    $"[{DateTimeOffset.Now:O}] {args.Exception}\n\n{args.Exception.StackTrace}");
+            }
+            catch { /* best-effort */ }
+        };
+
         var dbDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Uenta");
         Directory.CreateDirectory(dbDir);
@@ -44,6 +58,7 @@ public partial class App : System.Windows.Application
         services.AddTransient<UsersViewModel>();
         services.AddTransient<CustomersViewModel>();
         services.AddTransient<ReportsViewModel>();
+        services.AddTransient<RefundsViewModel>();
         services.AddTransient<LoginViewModel>();
         services.AddTransient<PlaceholderViewModel>();
 

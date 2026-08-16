@@ -19,6 +19,8 @@
         <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
         <conv:EnumEqualsConverter x:Key="EnumEqualsConverter" />
         <conv:IsNegativeConverter x:Key="NegConverter" />
+        <conv:CollectionNotEmptyToVisibilityConverter x:Key="CollectionNotEmptyToVis" />
+        <conv:CollectionEmptyToVisibilityConverter x:Key="CollectionEmptyToVis" />
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
         <!-- ─── Colores ─── -->
@@ -513,6 +515,8 @@
         <Geometry x:Key="CustomerIcon">M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M16 6h6 M16 10h4</Geometry>
         <!-- Icono de reportes (gráfico de barras, estilo feather) -->
         <Geometry x:Key="ChartIcon">M18 20V10 M12 20V4 M6 20v-6 M3 20h18</Geometry>
+        <!-- Icono de devoluciones (flecha circular de retorno, estilo feather) -->
+        <Geometry x:Key="RefundIcon">M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15</Geometry>
         <!-- Logo Uenta (ico.svg → Geometry inline; WPF no renderiza SVG nativo).
              Vive en App.xaml: LoginView lo necesita dentro de un DataTemplate, que solo
              resuelve App.Resources (no Window.Resources). -->
@@ -617,6 +621,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
             <views:ReportsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RefundsViewModel}">
+            <views:RefundsView />
         </DataTemplate>
     </Application.Resources>
 </Application>

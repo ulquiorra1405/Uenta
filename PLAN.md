@@ -425,12 +425,78 @@
 
 ---
 
-## Fase 2 — (roadmap, sin detalle)
+## Fase 2 — Devoluciones, notas de crédito y compras/proveedores
 
-Devoluciones / notas de crédito · compras y proveedores · e-CF (DGII). Se planifican
-con el mismo formato por pasos al entrar.
+> **Decisión de orden (15-ago, con Bryan):** el e-CF (DGII) se mueve al final de todo
+> (Fase 3). Es lo más delicado: depende de requisitos externos que cambian, exige
+> certificación y requiere un core de venta estable y sin deuda. Condiciones para que
+> sea seguro dejarlo al final: (1) congelar el esquema de `Sale` — devoluciones y
+> compras se construyen sobre el core actual sin romperlo; (2) expectativa clara: las
+> ventas previas a e-CF NO se convierten retroactivamente (quedan como recibos no
+> fiscales); (3) diseñar devoluciones extensibles para que el e-CF posterior solo
+> añada notas de crédito electrónicas (NCE), sin rediseño.
 
-## Fase 3 — (roadmap, sin detalle)
+### P5.1 — Devoluciones / notas de crédito
+
+> **ESTADO (16-ago): ✅ implementado y verificado.** Dominio + servicio + repositorio con
+> numeración atómica (`Sequences Id=2`) + migración aplicada + 10 tests nuevos (140/140
+> verdes) + pantalla desktop completa (recibo / sin recibo, líneas editables, reembolso
+> efectivo/tarjeta, historial, modal de resultado) + smoke UIA end-to-end (recibo #7 →
+> "Nota #2" persistida, caja refleja la devolución). Pendiente de roadmap: devolución
+> SIN recibo probada por UIA (flujo admin/supervisor) y el e-CF posterior solo añadirá NCE.
+
+- **Objetivo:** revertir una venta (total o parcial) con devolución de stock, nota de
+  crédito interna y registro en caja/reportes. Reembolso: efectivo (solo si la caja
+  tiene efectivo disponible), tarjeta o transferencia.
+- **Merge/Reemplaza:** el flujo inverso de la venta (P0.1/P2.2) y el hueco de
+  "operación" del scope Fase 1. `Sale.Status = Cancelled` hoy existe pero no se usa.
+- **Verificación:** vender → devolver → stock restaurado + caja refleja la devolución
+  + reportes no cuentan la venta como ingreso; devolver con caja sin efectivo →
+  error claro; tests.
+- **Decisiones (cerradas 15-ago, con Bryan):**
+  - **(a)** La devolución se registra contra la **caja actual del vendedor** que la
+    procesa (la caja original probablemente ya está cerrada). Si el reembolso es en
+    efectivo, la caja actual debe tener ese efectivo disponible.
+  - **(b)** Dos niveles por rol (ver matriz):
+    - Devolución **con recibo** (cliente trae el ticket): cualquier rol con `Sell`
+      (operación normal de mostrador, hay trazabilidad contra la venta original).
+    - Devolución **sin recibo** (manual/anónima): solo `Admin` + `Supervisor`
+      (permiso nuevo `RefundNoReceipt`), con **motivo obligatorio** (no puede quedar
+      en blanco). El botón aparece deshabilitado para el cajero con tooltip
+      "Requiere supervisor".
+  - **(c)** Devolución **parcial por línea** (p. ej. 1 de 3 cafés): la nota de crédito
+    cubre solo las líneas devueltas.
+  - **Candado de caja:** si el reembolso es en efectivo, la caja actual debe tener
+    efectivo suficiente (`CASH_INSUFFICIENT`). Es el segundo candado (el primero es
+    el rol) para evitar devoluciones de "dinero que no hay".
+  - Nueva acción de auditoría `RefundCreated` (hoy solo existe `SaleCreated`).
+
+### P5.2 — Compras y proveedores
+
+- **Objetivo:** registrar compras (producto, cantidad, costo unitario, proveedor,
+  fecha) que reponen stock y registran el costo real (reemplaza la entrada directa de
+  inventario del P3.2 para compras).
+- **Merge/Reemplaza:** la entrada manual de stock en inventario (P3.2) y el
+  `Cost` estático del producto.
+- **Verificación:** comprar → stock sube con movimiento tipo Compra → costo
+  actualizado; listar proveedores; tests.
+- **Decisiones (cerradas 15-ago, con Bryan):**
+  - **(a)** Costo **promedio ponderado** (estándar en POS; evita picos de margen).
+  - **(b)** **Solo contado** en v1 — sin cuentas por pagar (el crédito con proveedor
+    se añade después; menos superficie).
+  - **(c)** Entidad **`Supplier` nueva** (nombre, RNC, teléfono) con tabla propia;
+    los proveedores son datos maestros reutilizables.
+
+---
+
+## Fase 3 — e-CF (DGII) — facturación electrónica con NCF
+
+> **Puesta al final deliberadamente (15-ago, con Bryan):** lo más delicado del roadmap.
+> Depende de requisitos externos de la DGII, certificación, firma digital y decisiones
+> de negocio. Se planifica con detalle al entrar, cuando el core esté estable y no
+> quede deuda que lo obligue a rediseñarse.
+
+## Fase 4 — (roadmap, sin detalle)
 
 Fidelización · reportes avanzados · multi-sucursal · `POS.Api` + app móvil.
 

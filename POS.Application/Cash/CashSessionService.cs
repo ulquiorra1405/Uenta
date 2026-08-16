@@ -23,6 +23,7 @@ public record CashSessionDto
     public decimal? Difference { get; set; }
     public decimal CashSalesTotal { get; set; }
     public decimal NonCashSalesTotal { get; set; }
+    public decimal CashRefundsTotal { get; set; }
     public decimal ExpectedCash { get; set; }
 }
 
@@ -110,8 +111,9 @@ public class CashSessionService
 
         var cashSales = await _sessions.GetCashSalesTotalAsync(session.Id, ct);
         var nonCash = await _sessions.GetNonCashSalesTotalAsync(session.Id, ct);
+        var cashRefunds = await _sessions.GetCashRefundsTotalAsync(session.Id, ct);
         var withdrawals = session.Withdrawals.Sum(w => w.Amount);
-        var expected = session.InitialCash + cashSales - withdrawals;
+        var expected = session.InitialCash + cashSales - cashRefunds - withdrawals;
         var difference = request.FinalCount - expected;
 
         session.Status = CashSessionStatus.Closed;
@@ -123,7 +125,7 @@ public class CashSessionService
         await _audit.LogAsync(session.UserId, null, AuditAction.CashClosed,
             $"Caja #{session.Id} cerrada · conteo RD$ {request.FinalCount:N2} · esperado RD$ {expected:N2} · diferencia RD$ {difference:N2}", ct);
 
-        var dto = ToDto(session, session.Id, cashSales, nonCash);
+        var dto = ToDto(session, session.Id, cashSales, nonCash, cashRefunds);
         dto.ExpectedCash = expected;
         return Result.Success(dto);
     }
@@ -136,10 +138,11 @@ public class CashSessionService
 
         var cashSales = await _sessions.GetCashSalesTotalAsync(session.Id, ct);
         var nonCash = await _sessions.GetNonCashSalesTotalAsync(session.Id, ct);
-        return ToDto(session, session.Id, cashSales, nonCash);
+        var cashRefunds = await _sessions.GetCashRefundsTotalAsync(session.Id, ct);
+        return ToDto(session, session.Id, cashSales, nonCash, cashRefunds);
     }
 
-    private static CashSessionDto ToDto(CashSession s, long id, decimal cashSales, decimal nonCash)
+    private static CashSessionDto ToDto(CashSession s, long id, decimal cashSales, decimal nonCash, decimal cashRefunds = 0)
     {
         var withdrawals = s.Withdrawals.Sum(w => w.Amount);
         return new CashSessionDto
@@ -155,7 +158,8 @@ public class CashSessionService
             Difference = s.Difference,
             CashSalesTotal = cashSales,
             NonCashSalesTotal = nonCash,
-            ExpectedCash = s.InitialCash + cashSales - withdrawals
+            CashRefundsTotal = cashRefunds,
+            ExpectedCash = s.InitialCash + cashSales - cashRefunds - withdrawals
         };
     }
 }

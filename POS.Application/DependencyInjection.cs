@@ -4,6 +4,7 @@ using POS.Application.Cash;
 using POS.Application.Customers;
 using POS.Application.Products;
 using POS.Application.Reports;
+using POS.Application.Refunds;
 using POS.Application.Sales;
 using POS.Application.Settings;
 
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<CashSessionService>();
         services.AddScoped<CustomerService>();
         services.AddScoped<ReportService>();
+        services.AddScoped<RefundService>();
         return services;
     }
 }
