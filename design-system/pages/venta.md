@@ -190,8 +190,10 @@ ticket: 16px. Fila de ticket: 48px mín. (target táctil).
 
 ### 3.7 COBRAR
 
-- 100% del ancho del panel derecho, 52px, fondo **AccentBrush**, texto blanco,
-  bold, F8. Hover: `AccentDarkBrush`. Sin sombra ni layout shift.
+- 100% del ancho del panel derecho, 52px, estilo **`AccentButton` (OUTLINE)**: fondo
+  blanco/superficie + borde `AccentBrush` + texto `AccentDarkBrush` (AA sobre blanco), bold,
+  F8. Hover: fondo `AccentLightBrush` + borde `AccentDarkBrush`. **No sólido** (decisión
+  estética de Bryan: ningún botón de la app usa relleno de color). Sin sombra ni layout shift.
 - **Disabled si:** ticket vacío, línea de entrada vacía/pendiente (regla 3.2),
   caja cerrada, sin permisos.
 

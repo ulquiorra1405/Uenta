@@ -41,12 +41,17 @@ Los colores de énfasis viven en **tokens semánticos intercambiables en runtime
 
 ### 2.2 Variantes de contraste (detalle importante)
 
-Con texto blanco encima, el verde `#059669` da ~3.4:1 y el naranja `#EA580C` ~3.0:1. Suficiente para texto grande (AA large ≥3:1), insuficiente para texto normal (4.5:1). Regla:
+> **Actualización 16-ago (decisión de Bryan):** los botones de la app son outline/ghost/
+> superficie — **el texto de botón SIEMPRE va sobre fondo blanco/claro**, nunca sobre el
+> acento. Por eso `AccentDark` (#C2410C) y `PrimaryDark` (#047857) son los colores de TEXTO
+> de botón (AA sobre blanco ✓). Las variantes oscuras NO se usan como relleno de botón.
+
+Con texto blanco encima, el verde `#059669` da ~3.4:1 y el naranja `#EA580C` ~3.0:1. Suficiente para texto grande (AA large ≥3:1), insuficiente para texto normal (4.5:1). Regla (válida mientras el estilo sea outline; si algún día hubiera relleno sólido, aplicar esta):
 
 - **Verde `#059669`**: superficies de estado (pill activo, selección) con **texto verde sobre blanco**, o fondos con texto grande.
-- **Verde oscuro `#047857`** (variante de contraste): fondos sólidos con texto blanco normal (botón primario).
-- **Naranja `#EA580C`**: solo el botón COBRAR (texto grande) y avisos de confirmación críticos.
-- **Naranja oscuro `#C2410C`**: si alguna vez el naranja lleva texto pequeño.
+- **Verde oscuro `#047857`** (variante de contraste): texto/borde de botón outline (sobre blanco).
+- **Naranja `#EA580C`**: borde del botón COBRAR (outline) y avisos de confirmación críticos.
+- **Naranja oscuro `#C2410C`**: texto del botón COBRAR (sobre blanco) y avisos pequeños.
 
 Esto es exactamente lo que la skill marca como "contrast parity" — lo dejamos resuelto en el design system, no por pantalla.
 
@@ -78,7 +83,7 @@ Esto es exactamente lo que la skill marca como "contrast parity" — lo dejamos 
 | Componente | Hoy (Soft UI) | Propuesto (Minimal Funcional) |
 |---|---|---|
 | Botones | Radio 8px, sombra suave, hover `translateY(-1px)` | Radio 6px, **sin sombra**, hover = oscurecer fondo 5% (150ms), foco visible con ring |
-| Botón COBRAR | Naranja con sombra | Naranja sólido, **el único** elemento de color fuerte de la pantalla |
+| Botón COBRAR | Naranja con sombra | Naranja OUTLINE (borde + texto), **el único** elemento de color naranja de la pantalla. **No sólido** — decisión estética de Bryan (16-ago): en esta app ningún botón usa relleno de color. |
 | Cards de producto | Sombra md + hover eleva | Superficie blanca + hairline `#E2E8F0`; hover = borde se oscurece + fondo `#F8FAFC`; seleccionado = borde/halo verde |
 | Inputs | Borde `#E2E8F0`, foco con sombra 3px | Igual, foco = borde verde + ring fino `2px` (sin blur) |
 | Sidebar | Pill verde de activo | Activo = fondo `#F1F5F9` + texto/icono verde + **indicador de barra izquierda 3px verde** (más Swiss, menos "pill blando") |

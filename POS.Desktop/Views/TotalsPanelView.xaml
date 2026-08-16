@@ -83,8 +83,8 @@
                     <TextBlock Grid.Column="0" Text="TOTAL" FontSize="16" FontWeight="Bold"
                                FontFamily="{StaticResource DisplayFont}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding Total, StringFormat=RD$ {0:N2}}"
-                               FontSize="26" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               FontSize="32" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
+                               Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" />
                 </Grid>
             </StackPanel>
         </Border>
@@ -102,7 +102,7 @@
         </UniformGrid>
 
         <!-- COBRAR -->
-        <Button Grid.Row="3" Content="COBRAR  (F8)" Height="52" FontSize="17"
+        <Button Grid.Row="3" Content="COBRAR  (F8)" Height="52" FontSize="20"
                 Style="{StaticResource AccentButton}"
                 Command="{Binding CobrarCommand}" />
     </Grid>

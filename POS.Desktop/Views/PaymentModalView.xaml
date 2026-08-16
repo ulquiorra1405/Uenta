@@ -59,7 +59,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBox Grid.Column="0" Text="{Binding ReceivedText, UpdateSourceTrigger=PropertyChanged}"
                                  FontSize="20" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
-                                 Padding="12,9" ToolTip="Monto recibido del cliente (F9 = exacto)" />
+                                 Padding="12,9" ToolTip="Monto recibido del cliente (F9 = exacto)"
+                                 AutomationProperties.Name="MontoRecibido" />
 <Button Grid.Column="1" Content="Exacto (F9)" Margin="6,0,0,0"
                         Style="{StaticResource SecondaryButton}"
                         Command="{Binding SetExactAmountCommand}" />
@@ -105,7 +106,8 @@
                     <TextBlock Text="Efectivo" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
                     <TextBox Text="{Binding MixedCashText, UpdateSourceTrigger=PropertyChanged}"
                              FontSize="18" FontWeight="Bold" FontFamily="{StaticResource DisplayFont}"
-                             Padding="12,9" Margin="0,4,0,8" ToolTip="Monto a cobrar en efectivo" />
+                             Padding="12,9" Margin="0,4,0,8" ToolTip="Monto a cobrar en efectivo"
+                             AutomationProperties.Name="MixedCashText" />
                     <TextBlock Text="Resto en" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" />
                     <UniformGrid Columns="2" Margin="0,4,0,8">
                         <ToggleButton Style="{StaticResource CategoryChip}" Content="Tarjeta" Margin="0,0,4,0"

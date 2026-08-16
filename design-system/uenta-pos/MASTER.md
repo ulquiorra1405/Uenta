@@ -77,9 +77,19 @@ reiniciar (ver `estetica-minimalista.md` §2).
 
 ### Botones (estilos implícitos en App.xaml — regla de la skill: un Style por TargetType)
 
-- **Primario (sólido):** `PrimaryBrush`/blanco. Hover = `PrimaryDarkBrush` (oscurecer, **sin elevación ni translate**). Press = opacity 0.8. Focus = ring 2px `PrimaryDarkBrush`.
+> **DECISIÓN ESTÉTICA (Bryan, 16-ago): en esta app NINGÚN botón usa relleno de color
+> sólido.** Todos son outline / ghost / superficie con hairline. Esto fue una decisión
+> consciente por el look minimalista de la app; no revivir "botón sólido naranja" aunque
+> specs antiguos lo describan.
+
+- **Primario (outline):** fondo blanco/superficie + borde `PrimaryBrush` + texto `PrimaryDarkBrush`.
+  Hover = fondo `PrimaryLightBrush` + borde `PrimaryDarkBrush` (sin elevación ni translate).
+  Press = opacity 0.7. Focus = borde 2px `PrimaryStrongBrush`.
 - **Secundario (ghost):** sin borde, texto `PrimaryDarkBrush`. Hover = fondo `MutedBrush`. Press = `PrimaryLightBrush`. Focus = ring 2px `PrimaryBrush`. Para acciones secundarias (Buscar, Editar, Cancelar, Descuento…).
 - **Pago (superficie):** blanco + hairline, hover = `MutedBrush` + borde `PrimaryBrush`.
+- **Acento (COBRAR / confirmaciones críticas):** mismo patrón outline que el primario pero con
+  borde `AccentBrush` + texto `AccentDarkBrush`. Hover = fondo `AccentLightBrush` + borde
+  `AccentDarkBrush`. Focus = `AccentStrongBrush`. Es el ÚNICO elemento con acento naranja.
 - **Icono compacto:** transparente, hover = `MutedBrush`.
 
 ### Cards de producto

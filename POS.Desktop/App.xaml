@@ -128,7 +128,10 @@
 
         <!-- Botón de acento OUTLINE (COBRAR / Confirmar pago): fondo blanco, borde Accent,
              texto AccentDark (AA sobre blanco). Hover: fondo claro + borde oscuro
-             (mismo patrón que el resto de botones). -->
+             (mismo patrón que el resto de botones).
+             DECISIÓN ESTÉTICA (Bryan, sesión previa): en esta app NINGÚN botón usa
+             relleno de color sólido — todos son outline/ghost/superficie. No cambiar
+             a sólido por mucho que un spec antiguo lo describa. -->
         <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
