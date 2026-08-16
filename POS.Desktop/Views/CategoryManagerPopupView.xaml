@@ -62,7 +62,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                                             Padding="10,7" FontSize="12.5" />
+                                             Padding="10,7" FontSize="12.5" AutomationProperties.Name="NombreCategoria" />
                                     <TextBlock FontSize="10.5" Margin="4,3,0,0"
                                                Foreground="{StaticResource TextSecondaryBrush}">
                                         <TextBlock.Style>

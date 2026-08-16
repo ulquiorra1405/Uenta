@@ -45,15 +45,15 @@
 
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Nombre *" VerticalAlignment="Top" Margin="0,8,0,0" />
             <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10" />
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="NombreProducto" />
 
             <TextBlock Grid.Row="1" Grid.Column="0" Text="SKU" VerticalAlignment="Top" Margin="0,8,0,0" />
             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Sku, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10" />
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="SkuProducto" />
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Código de barras" VerticalAlignment="Top" Margin="0,8,0,0" />
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Barcode, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10" />
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="BarcodeProducto" />
 
             <TextBlock Grid.Row="3" Grid.Column="0" Text="Categoría" VerticalAlignment="Top" Margin="0,8,0,0" />
             <Grid Grid.Row="3" Grid.Column="1">
@@ -65,7 +65,7 @@
                           ItemsSource="{Binding Categories}"
                           SelectedValue="{Binding SelectedCategoryId}"
                           SelectedValuePath="Id" DisplayMemberPath="Name"
-                          Padding="8,6" Margin="0,0,6,10" />
+                          Padding="8,6" Margin="0,0,6,10" AutomationProperties.Name="CategoriaProducto" />
                 <!-- Misma altura del combo (Height 30) y centrado → el + queda centrado -->
                 <Button Grid.Column="1" Style="{StaticResource IconButton}" ToolTip="Nueva categoría"
                         AutomationProperties.Name="NuevaCategoria"
@@ -92,11 +92,11 @@
 
             <TextBlock Grid.Row="5" Grid.Column="0" Text="Precio (ITBIS incl.)" VerticalAlignment="Top" Margin="0,8,0,0" />
             <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Price, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10" />
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="PrecioProducto" />
 
             <TextBlock Grid.Row="6" Grid.Column="0" Text="Costo (RD$)" VerticalAlignment="Top" Margin="0,8,0,0" />
             <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Cost, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10" />
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="CostoProducto" />
 
             <!-- Margen en vivo -->
             <Grid Grid.Row="7" Grid.Column="1" Margin="0,6,0,10">
@@ -152,7 +152,7 @@
 
             <!-- Al crear: campo editable de stock inicial -->
             <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Stock, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10">
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="StockProducto">
                 <TextBox.Style>
                     <Style TargetType="TextBox">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -262,7 +262,7 @@
 
             <TextBlock Grid.Row="9" Grid.Column="0" Text="Stock mínimo" VerticalAlignment="Top" Margin="0,8,0,0" />
             <TextBox Grid.Row="9" Grid.Column="1" Text="{Binding MinStock, UpdateSourceTrigger=PropertyChanged}"
-                     Padding="8,6" Margin="0,0,0,10" />
+                     Padding="8,6" Margin="0,0,0,10" AutomationProperties.Name="StockMinimoProducto" />
 
             <!-- Estado: activo/inactivo (solo en edición; al crear siempre nace activo) -->
             <StackPanel Grid.Row="10" Grid.Column="1" Orientation="Horizontal" Margin="0,2,0,0"
