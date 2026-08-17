@@ -84,12 +84,24 @@
                         <Style TargetType="StackPanel">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding SelectedMethod}" Value="Card">
+                                <!-- Solo visible con método tarjeta/transferencia Y sin mixto:
+                                     al cambiar a Mixto el toggle solo setea IsMixed (no llama
+                                     OpenMixed), así que SelectedMethod quedaría en Card/Transfer
+                                     y este panel (con el aviso del datáfono) seguía visible. -->
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SelectedMethod}" Value="Card" />
+                                        <Condition Binding="{Binding IsMixed}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding SelectedMethod}" Value="Transfer">
+                                </MultiDataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding SelectedMethod}" Value="Transfer" />
+                                        <Condition Binding="{Binding IsMixed}" Value="False" />
+                                    </MultiDataTrigger.Conditions>
                                     <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
+                                </MultiDataTrigger>
                             </Style.Triggers>
                         </Style>
                     </StackPanel.Style>
